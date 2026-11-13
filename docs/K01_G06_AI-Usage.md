@@ -1,7 +1,77 @@
-# Catatan penggunaan AI
+# Deklarasi Penggunaan AI
 
-| Tanggal | Alat | Lingkup bantuan | Verifikasi |
-| --- | --- | --- | --- |
-| 5 November 2026 | OpenAI Codex | Menelaah ketentuan M9 dan codebase, menyiapkan source final dari implementasi sebelumnya, menerapkan desain FigCraft ke Flutter, menyembunyikan kontrol infrastruktur, menambah regression test UI, memperbaiki reproduksi native runner, membuat dokumentasi/template/CI dan menjalankan pengujian lokal | Bukti perintah dan batas pengujian dicatat di `src/docs/verification.md`; hasil tidak menggantikan review/pemahaman anggota |
+## Tugas Besar IF2150 - Rekayasa Perangkat Lunak
 
-Pemilik repo meminta persiapan dan push source final. Tidak membuat atribusi commit/PR atau review palsu atas nama anggota. Pembayaran/refund/payout tetap simulasi yang ditandai. Tim perlu memeriksa, memahami, dan memperbarui catatan penggunaan AI pada repo akademik sesuai kontribusi sebenarnya.
+| Informasi | Keterangan |
+|---|---|
+| Kelas | *[K1]* |
+| Nomor Kelompok | *[6]* |
+| Nama Kelompok | *[MZakyBTW]* |
+| Nama Perangkat Lunak | *[SisaRasa]* |
+
+**Anggota Kelompok:**
+
+| NIM | Nama |
+|---|---|
+| *[13525067]* | *[Fathar Atandra Denaya]* |
+| *[13525040]* | *[Muhammad Zaky Amani]* |
+| *[13525139]* | *[Josephine Bintang N.L]* |
+| *[13525070]* | *[Devina Athalia Putri Kusumah]* |
+| *[13525004]* | *[Nabil Rabbani]* |
+
+---
+
+### Daftar Isi
+* [Milestone 1](#milestone-1)
+* [Milestone 2](#milestone-2)
+* [Milestone 4](#milestone-4)
+* Notes: Copy bagian Daftar Isi seperti Milestone 1 untuk Milestone berikutnya, contoh ``* [Milestone 2](#milestone-2)``. Ketika Daftar isi diklik maka akan langsung diarahkan ke bagian bawah sesuai dengan Milestone tujuan.
+
+---
+
+### Log Penggunaan AI per Milestone
+
+Silakan catat penggunaan AI yang berdampak signifikan pada pengerjaan tugas (misal: *generate* fungsi algoritma yang kompleks, *generate* draf dokumen SKPL/DPPL, atau *debugging* error utama). 
+*Penggunaan sepele seperti memperbaiki *typo* atau auto-complete satu baris kode tidak perlu dicatat.*
+
+### Milestone 1
+| Tool AI | Tujuan Penggunaan | Contoh Prompt Utama | Modifikasi & Validasi Manusia |
+| :--- | :--- | :--- | :--- |
+| *[Nama AI]* | *[Sertakan Tujuan Penggunaan]* | *[Tuliskan Prompt Utama]* | *[Tuliskan Keputusan Hasil Validasi]* |
+| *Gemini* | *Mengecek relasi antar class* | *"Apakah relasi antara class User dan Order dalam UML ini seharusnya composition atau aggregation?"* | *AI menyarankan composition, tapi setelah dicek kembali ke requirement, kami menggunakan aggregation karena Order masih bisa eksis di history.* |
+| *OpenAI Codex* | *Melakukan riset SDG 2 Indonesia dan Too Good To Go, lalu menyusun draf Bab 2 berdasarkan Bab 1 dan kebutuhan awal proyek* | *"Lakukan research dengan beberapa parallel agent ... integrasikan dua research untuk membuat Bab 2; pastikan melihat Bab 1 terlebih dahulu."* | *Draf telah diselaraskan dengan konsep paket kejutan, diskon 50–70%, penawaran anonim, pickup-only, pembayaran QRIS, serta aktor penjual dan pembeli. Validasi akhir dan keputusan penggunaan oleh kelompok masih diperlukan.* |
+| *Gemini* | *Menghasilkan diagram proses bisnis yang disederhanakan, profesional, dan sesuai dengan dokumen MD yang ada.* | *"Berdasarkan file .md buatkan diagram serupa"* | *AI menghasilkan diagram swimlane yang bersih dan profesional. Kelompok memutuskan untuk menggunakan diagram swimlane yang disederhanakan ini sebagai acuan dan sudah membuat diagram yang baru* |
+
+### Milestone 2
+| Tool AI | Tujuan Penggunaan | Contoh Prompt Utama | Modifikasi & Validasi Manusia |
+| :--- | :--- | :--- | :--- |
+| | *Antigravity (LLM)* | *Memvalidasi matriks keterlacakan (Traceability Matrix) dan dekomposisi hierarkis Bab 2* | *"Lakukan looping crosscheck berulang pada keseluruhan Bab 2 dan pastikan konsistensi dengan Bab lainnya menggunakan agen paralel"* | *AI secara akurat menemukan kontradiksi pada aturan no-show pembeli, kelemahan pada skema refund otomatis, algoritma hashing usang (SHA-256), dan hilangnya peringatan alergen (anafilaksis). Kami menyetujui seluruh koreksi tersebut dan menerapkannya pada Draf Bab 2 final.* | |
+
+### Milestone 4
+| Tool AI | Tujuan Penggunaan | Contoh Prompt Utama | Modifikasi & Validasi Manusia |
+| :--- | :--- | :--- | :--- |
+| *Muse Spark (via OpenCode)* | *Membuat file .drawio class diagram Bab 4 (7 per-UC + 1 keseluruhan) berdasarkan tabel 4.2.1–4.2.7 dan contoh M4* | *"Buatkan file .drawio untuk semuanya di bahan termasuk 4.3, teliti sesuai contoh dan tabel 4.2.1 dst"* | *Nabil memverifikasi kelas dan relasi tiap diagram terhadap tabel 4.2, me-render ulang di diagrams.net, dan memilih versi nama-saja sesuai template (menolak opsi kompartemen atribut).* |
+
+### Milestone 5
+| Tool AI | Tujuan Penggunaan | Contoh Prompt Utama | Modifikasi & Validasi Manusia |
+| :--- | :--- | :--- | :--- |
+| *Antigravity (LLM)* | *Konsultasi cakupan spesifikasi lingkungan operasi perangkat lunak (Bab 2.5) dan klarifikasi batasan arsitektur deployment sistem* | *"coba anda cek 2.5 itu arsitektur bukan?"* | *Nabil memvalidasi bahwa Bab 2.5 pada SKPL merupakan spesifikasi lingkungan operasi (IEEE Std 830).* |
+| *Antigravity (LLM)* | *Mengecek isi yang kurang/template yang masih ada di dokumen untuk final checkup* | *"coba list semua bagian yang masih terlihat template docs takut ada yang terlewat"* | *Atan memverifikasi bagian-bagian yang terlewat dan menambahkan kontennya (copas dari dokumen sebelumnya dan dimodifikasi).* |
+
+### Milestone 6
+| Tool AI | Tujuan Penggunaan | Contoh Prompt Utama | Modifikasi & Validasi Manusia |
+| :--- | :--- | :--- | :--- |
+| *Antigravity (LLM)* | *Konsultasi perancangan Deployment View (Physical View) sistem dan memverifikasi keselarasan arsitektur terhadap kode implementasi (Bab 3.2)* | *"ini udah sesuai sama aplikasi kita? kan ada juga tuh aplikasinya di sisa rasa"* | *Nabil memvalidasi kesesuaian komponen simpul fisik pada diagram deployment terhadap struktur kode nyata aplikasi Flutter Android, REST API Express, dan basis data Docker PostgreSQL 15.* |
+
+---
+### Pernyataan Integritas dan Persetujuan
+
+Kami yang bertanda tangan di bawah ini menyatakan bahwa seluruh log penggunaan AI di atas adalah benar. Kami telah memvalidasi seluruh hasil AI dan bertanggung jawab penuh atas orisinalitas, keamanan, dan kebenaran hasil akhir dari tugas ini.
+
+| Tanda Tangan | Nama Anggota |
+| :---: | :--- |
+| <img src="./assets/ttd-anggota1.png" width="100"> | **[NIM - Nama Anggota 1]** |
+| <img src="./assets/ttd-anggota2.png" width="100"> | **[NIM - Nama Anggota 2]** |
+| <img src="./assets/ttd-anggota3.png" width="100"> | **[NIM - Nama Anggota 3]** |
+| <img src="./assets/ttd-anggota4.png" width="100"> | **[NIM - Nama Anggota 4]** |
+| <img src="./assets/ttd-anggota5.png" width="100"> | **[NIM - Nama Anggota 5]** |
