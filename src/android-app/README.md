@@ -1,4 +1,4 @@
-# Aplikasi Android SisaRasa
+# Android SisaRasa
 
 Panduan lengkap: [../README.md](../README.md).
 
@@ -7,6 +7,6 @@ flutter pub get --enforce-lockfile
 flutter run --dart-define=API_BASE=http://10.0.2.2:3100
 ```
 
-Backend harus sudah hidup. HTTP hanya di build debug. Pada perangkat fisik gunakan endpoint HTTPS. Release menonaktifkan backup dan cleartext, memerlukan signing key privat, dan tidak memakai debug signature.
+Backend harus hidup. HTTP hanya untuk debug; release memakai HTTPS, signing privat, backup Android off dan cleartext off. `core/theme/` memuat tema, `core/widgets/` komponen bersama, dan `features/` layar/controller per fitur. Pengaturan server tersembunyi kecuali build operator mengaktifkan `DEVELOPER_SETTINGS=true`.
 
-Antarmuka mengikuti desain final di `../design/sisarasa.figcraft`. Warna/typography ada pada `lib/core/theme/`; ilustrasi vektor pada `lib/core/widgets/brand_art.dart`. Pengaturan infrastruktur tersembunyi secara default; untuk build operator khusus tambahkan `--dart-define=DEVELOPER_SETTINGS=true`. Jangan aktifkan untuk distribusi pengguna.
+Native test memakai `TEST_API_BASE` terpisah dari API_BASE produksi. `scripts/native-test.sh` meneruskan nilainya ke Flutter dan Gradle instrumentation, sehingga emulator dapat menguji API repo akademik pada port yang berbeda.

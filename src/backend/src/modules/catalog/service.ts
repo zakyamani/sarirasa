@@ -1,9 +1,9 @@
-import type { Dependencies, ServiceContext } from '../../core/contracts.js';
-import { role } from '../../core/auth.js';
-import { requireState } from '../../core/errors.js';
-import { decodeCursor, encodeCursor } from '../../core/pagination.js';
-import { disclaimer } from '../../core/labels.js';
-import { CatalogRepository, type CatalogRecord } from './repository.js';
+import type {Dependencies, ServiceContext} from '../../core/contracts.js';
+import {role} from '../../core/auth.js';
+import {requireState} from '../../core/errors.js';
+import {decodeCursor, encodeCursor} from '../../core/pagination.js';
+import {disclaimer} from '../../core/labels.js';
+import {CatalogRepository, type CatalogRecord} from './repository.js';
 export type CatalogQuery = {
   cursor?: string;
   limit?: number;

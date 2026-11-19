@@ -1,107 +1,97 @@
-<p align="center">
-  <img src="src/docs/assets/readme/hero.svg" alt="SisaRasa — aplikasi Android pemesanan paket surplus makanan." width="1200" />
-</p>
 
-<p align="center">
-  <a href="https://github.com/aniceswan/sarirasa/actions/workflows/ci.yml"><img src="https://github.com/aniceswan/sarirasa/actions/workflows/ci.yml/badge.svg" alt="Status CI backend dan Flutter" /></a>
-</p>
+# Tugas Besar IF2150 Rekayasa Perangkat Lunak
 
-<p align="center">
-  <a href="#mulai-lokal"><strong>Mulai lokal</strong></a> &nbsp; · &nbsp;
-  <a href="src/README.md">Dokumentasi</a> &nbsp; · &nbsp;
-  <a href="src/design/sisarasa.figcraft">Desain FigCraft</a> &nbsp; · &nbsp;
-  <a href="https://github.com/aniceswan/sarirasa/issues/new/choose">Issue</a>
-</p>
+Dokumentasi aplikasi backend dan Android: [src/README.md](src/README.md).
 
-SisaRasa menghubungkan penjual surplus makanan dengan pembeli melalui paket kejutan berdiskon **50–70%**. Pembeli memesan, melakukan pembayaran<sup><a href="#catatan">1</a></sup>, lalu mengambil paket menggunakan **QR atau OTP**. Identitas gerai ditampilkan setelah pembayaran berhasil.
+---
 
-## Tampilan aplikasi
+## 1. Overview
 
-<img src="src/docs/assets/readme/app-gallery.png" alt="Katalog pembeli, detail paket, dan penawaran mitra pada aplikasi Flutter." width="1200" />
+Setiap milestone, asisten akan merilis materi/spesifikasi baru ke **repository original** yang ada di organisasi GitHub mata kuliah ini. Kelompok bekerja di **hasil fork** dari repository tersebut, dan setiap ada milestone baru, kelompok melakukan **sync** untuk pull update tersebut ke repo hasil fork.
 
-[Katalog](src/docs/assets/catalog.png) · [Detail paket](src/docs/assets/offer-detail.png) · [Penawaran mitra](src/docs/assets/seller-dashboard.png) · [Desain FigCraft](src/design/sisarasa.figcraft)
+--- 
+## 2. Repository Structure
 
-## Fitur
+Repository original disusun per milestone:
 
-| Pembeli | Mitra penjual |
-| --- | --- |
-| Katalog, kategori dan filter alergen | Profil gerai dan pengelolaan penawaran |
-| Checkout dan pembayaran | Kuota, harga dan jadwal pengambilan |
-| Tiket QR/OTP yang dapat dibuka offline | Validasi pengambilan lewat scan atau OTP |
-| Riwayat pesanan, pengaduan dan ulasan | Inbox, tanggapan pengaduan dan pencairan |
-
-<img src="src/docs/assets/readme/journey.svg" alt="Alur penggunaan: terbitkan paket, pesan, ambil, lalu selesaikan pengambilan." width="1200" />
-
-[Use case UC01–UC07](src/README.md#fitur) · [Panduan penggunaan](src/README.md#coba-aplikasi)
-
-## Teknologi
-
-<p align="center">
-  <img src="src/docs/assets/readme/logos/flutter.svg" width="52" height="52" alt="Flutter" title="Flutter" /> &nbsp;
-  <img src="src/docs/assets/readme/logos/dart.svg" width="52" height="52" alt="Dart" title="Dart" /> &nbsp;
-  <img src="src/docs/assets/readme/logos/nodejs.svg" width="52" height="52" alt="Node.js" title="Node.js" /> &nbsp;
-  <img src="src/docs/assets/readme/logos/typescript.svg" width="52" height="52" alt="TypeScript" title="TypeScript" /> &nbsp;
-  <img src="src/docs/assets/readme/logos/express.svg" width="52" height="52" alt="Express" title="Express" /> &nbsp;
-  <img src="src/docs/assets/readme/logos/postgresql.svg" width="52" height="52" alt="PostgreSQL" title="PostgreSQL" /> &nbsp;
-  <img src="src/docs/assets/readme/logos/docker.svg" width="52" height="52" alt="Docker" title="Docker" /> &nbsp;
-  <img src="src/docs/assets/readme/logos/android.svg" width="52" height="52" alt="Android" title="Android" /> &nbsp;
-</p>
-
-<p align="center"><sub>Flutter · Dart · Node.js · TypeScript · Express · PostgreSQL · Docker · Android</sub></p>
-
-[Versi dan dependensi](src/README.md#teknologi)
-
-## Arsitektur
-
-Aplikasi Flutter berkomunikasi dengan API Express melalui HTTPS/WSS. API dan worker menggunakan PostgreSQL. Foto gerai dan bukti pengaduan disimpan sebagai media privat.
-
-<img src="src/docs/assets/readme/architecture.svg" alt="Diagram Flutter, API Express, PostgreSQL, worker dan penyimpanan media." width="1200" />
-
-[Penjelasan arsitektur](src/README.md#arsitektur) · [Struktur folder](src/README.md#struktur-folder) · [Database](src/README.md#database-dan-penyimpanan) · [API](src/backend/openapi.yaml)
-
-## Mulai lokal
-
-Prasyarat: Docker Compose dan Python untuk backend; Flutter, JDK dan Android SDK untuk aplikasi. [Panduan instalasi lengkap](src/README.md#mulai-lokal).
-
-```bash
-cd src
-./scripts/setup.sh
-./scripts/start.sh
-./scripts/seed.sh
+```
+docs/
+	assets/                        # aset dokumen umum
+	KXX_GYY_AI-Usage.md            # dokumentasi penggunaan AI
+	KXX_GYY_Logbook.md             # dokumentasi logbook pekerjaan kelompok
+	M1/                            # milestone 1
+		assets/                    # gambar, diagram, dll untuk milestone ini
+			diagram/               # diagram UML, activity, dll
+		KXX_GYY_Form-Asistensi.md  # dokumentasi asistensi
+		KXX_GYY_Template1_TB.md    # dokumen tugas besar
+	M2/                            # milestone 2
+		...
+	...
+src/                               # source code perangkat lunak
 ```
 
-Jalankan aplikasi dari folder `src/android-app`:
+**Penting:** setiap rilis milestone baru hanya akan **menambah** folder/file baru. Asisten tidak akan mengubah isi folder milestone yang sudah rilis sebelumnya. Ini artinya kelompok bebas mengedit apapun yang sudah dikerjakan di folder-folder lama tanpa takut tertimpa saat sync.
 
-```bash
-flutter pub get --enforce-lockfile
-flutter run --dart-define=API_BASE=http://10.0.2.2:3100
-```
+---
 
-Akun uji tersimpan di `.secrets/demo-access.txt` setelah seed. Konfigurasi server ditentukan saat build dan tidak ditampilkan di aplikasi pengguna.
+## 3. Initial Setup
 
-## Pengujian
+Lakukan ini **sekali saja** di awal.
 
-<img src="src/docs/assets/readme/evidence.svg" alt="Hasil lokal 5 November 2026: 47 tes backend, 63 Flutter, 6 Android native; 53 frame desain." width="1200" />
+1. **Fork repository.** Satu orang perwakilan kelompok membuka repository original [IF2150-RPL](https://github.com/RPL-24/IF2150-RPL), klik tombol **Fork**, lalu pilih tujuan fork ke **akun pribadi** perwakilan tersebut.
+2. **Ganti nama repository hasil fork.** Repository original bernama `IF2150-RPL`. Saat melakukan fork, ganti nama repository menjadi format `IF2150-RPL-KXX-GYY`, dengan `XX` adalah nomor kelas (contoh: `01`) dan `YY` adalah nomor kelompok (contoh: `10`). Misalnya, kelas 01 kelompok 10 akan menamai repo fork-nya `IF2150-RPL-K01-G10`.
+3. **Set repo menjadi public, lalu invite anggota kelompok.** Perwakilan yang fork tadi otomatis jadi owner dari repo fork tersebut. Repo hasil fork **wajib public**: buka **Settings → General → Danger Zone → Change visibility**, lalu ubah ke **Public**. Selain itu, tetap invite semua anggota kelompok sebagai collaborator supaya bisa push/commit langsung: masuk ke **Settings → Collaborators and teams → Add people**, lalu invite satu per satu. Setiap anggota hanya akan punya akses commit ke repo fork kelompok sendiri, bukan ke repo kelompok lain atau ke organisasi.
+4. **Aktifkan notifikasi rilis.** Buka repository original (bukan fork kalian), klik tombol **Watch → Custom**, lalu centang **Releases**. Dengan ini kalian akan otomatis dapat notifikasi setiap kali asisten merilis tubes baru, tanpa perlu bolak-balik cek manual.
 
-Pengujian lokal pada **5 November 2026** mencakup transaksi, backup/restore, tiket offline dan notifikasi Android. Typecheck dan Flutter analyze lulus.
+---
 
-[Laporan pengujian](src/docs/verification.md) · [Jalankan test](src/README.md#pengujian-lokal) · [Profiling](src/docs/evidence/benchmark.json)
+## 4. Working Rules
 
-## Dokumentasi
+- **Secara default, kerjakan progres langsung di branch `main`** pada repo fork kelompok, ini bukan keharusan teknis, hanya disederhanakan supaya tidak ada risiko salah push ke branch yang salah. Kelompok yang sudah nyaman dengan git boleh memakai branch working tambahan, asal branch `main` tetap dijaga untuk menerima update sync dari asisten, dan progres di branch tambahan rutin digabungkan (merge) dari `main` setiap kali selesai sync.
+- **Jangan mengubah atau menghapus** folder milestone yang sudah pernah dirilis sebelumnya, supaya proses sync ke depannya tetap lancar.
+- Commit sesering mungkin dengan message yang jelas. Riwayat commit yang rapi memudahkan asisten memahami progres kelompok saat menilai. Kelompok bisa mengikuti standar [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) untuk format commit messages yang lebih terstruktur.
 
-| Dokumen | Isi |
-| --- | --- |
-| [README aplikasi](src/README.md) | Instalasi, konfigurasi, penggunaan dan troubleshooting |
-| [Struktur modul](src/README.md#mengerjakan-issue) | Lokasi file untuk mengerjakan issue |
-| [Kontribusi](CONTRIBUTING.md) | Branch, issue, commit dan PR |
-| [Operasi](src/docs/operations.md) | Server, backup dan pemulihan |
-| [Traceability](src/docs/traceability.md) | Pemetaan SKPL/DPPL ke implementasi |
-| [Laporan M9](docs/M9/K01_G06_Implementasi.md) | Implementasi dan ketentuan milestone |
-| [AI usage](docs/K01_G06_AI-Usage.md) dan [logbook](docs/K01_G06_Logbook.md) | Catatan pengerjaan |
+---
 
-Source berada di **`src/`**. Pengumpulan resmi dilakukan di [repo akademik IF2150-RPL-K01-G06](https://github.com/zakyamani/IF2150-RPL-K01-G06).
+## 5. Receiving New Milestone Updates (Sync)
 
-## Catatan
+Saat asisten merilis milestone baru, perhatikan yang perlu kelompok lakukan.
 
-1. Pembayaran, rekening, fee, refund dan pencairan menggunakan simulasi; tidak ada transfer uang nyata. Screenshot menggunakan data fiktif.
-2. Pengujian kamera dua HP, perangkat minimum dan baterai OEM belum dilakukan. Batas pengujian tercantum dalam [laporan](src/docs/verification.md).
+1. Buka `main` branch repository **fork** kelompok. Akan muncul keterangan _"This branch is X commits behind"_. 
+2. Klik tombol **Sync fork**, lalu **Update branch**. Materi milestone baru akan otomatis masuk ke branch `main` fork kelompok, tergabung dengan progres yang sudah kelompok kerjakan.
+3. Jika proses sync berhasil tanpa keterangan konflik, kelompok bisa langsung lanjut kerja seperti biasa.
+4. Jika GitHub meminta kelompok membuat **pull request** untuk resolve konflik, artinya ada bentrokan file, segera hubungi asisten sebelum mencoba resolve sendiri, terutama jika belum familiar dengan proses merge conflict.
+
+---
+
+## 6. Submission Mechanism per Milestone
+
+Pengumpulan milestone **tidak dilihat dari commit terakhir**, melainkan dari **tag** yang kelompok buat sebelum deadline.
+
+Cara membuat tag submission:
+
+1. Pastikan semua perubahan untuk milestone ini sudah di-commit ke branch `main` fork kelompok.
+2. Buka tab **Releases** di repo fork kelompok → **Draft a new release**.
+3. Di bagian tag, ketik tag baru dengan format `vX.Y`, dengan `X` adalah nomor milestone pengerjaan tugas dan `Y` adalah nomor revisi pada milestone tersebut.
+4. Pastikan target rilis mengarah ke branch `main` (commit terakhir kelompok saat itu).
+
+Contoh penggunaan format tag:
+
+| Tag | Keterangan |
+| :--- | :--- |
+| `v1.0` | Release milestone pertama |
+| `v1.1` | Revisi pertama pada milestone pertama |
+| `v2.0` | Release milestone kedua |
+
+Khusus pengumpulan final, kelompok **WAJIB** membuat release dengan format tag di atas.
+
+Tag inilah yang jadi bukti resmi apa yang kelompok kumpulkan untuk milestone tersebut. Ulangi langkah ini di setiap deadline milestone.
+
+---
+
+<br>
+<p align="center">
+	<text>Selamat mengerjakan!</text>
+	<br>
+	<text>Tim Asisten RPL 2024</text>
+</p>

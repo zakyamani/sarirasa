@@ -1,16 +1,9 @@
 # Kontribusi
 
-Mulai dari [panduan lokal](src/README.md). Buat issue untuk bug atau pekerjaan baru, jelaskan perilaku yang diharapkan dan kriteria selesai. Gunakan data uji fiktif; jangan lampirkan token, OTP aktif, password, data pengguna, atau isi `.env`.
+Panduan menjalankan aplikasi ada di [src/README.md](src/README.md). Mulai dari issue dengan lingkup dan kriteria selesai, lalu buat branch fitur dari `main` terbaru. Gunakan commit semantik dan PR yang mencantumkan issue, perubahan serta hasil pengujian. Minta minimal satu anggota lain memberi review sebelum merge.
 
-1. Ambil issue dan sepakati penanggung jawab di GitHub sebelum mengerjakan.
-2. Buat branch `feat/nama-fitur`, `fix/nama-bug`, `test/nama-alur`, atau `docs/nama-dokumen` dari `main` terbaru.
-3. Kerjakan perubahan dalam modul yang relevan. Backend memisahkan route, service dan repository; Flutter memisahkan screen, controller dan penyimpanan/API.
-4. Jalankan pemeriksaan yang relevan. `cd src && ./scripts/test.sh` menjalankan backend/PostgreSQL serta Flutter. Perubahan Android native juga perlu emulator dan `./scripts/e2e.sh`.
-5. Gunakan commit semantik, misalnya `fix(pickup): cegah konfirmasi ganda`.
-6. Buka PR dengan `Closes #nomor`, tujuan, perubahan, bukti test dan screenshot jika UI berubah. Minta minimal satu anggota lain melakukan review sebelum merge.
+Pembagian modul mengikuti laporan M9 B.4. Jika mengintegrasikan source yang telah disiapkan, jelaskan asalnya dan penyesuaiannya; gunakan identitas Git sendiri. Commit mewakili perubahan nyata, tanpa mengubah tanggal atau membuat atribusi atas nama anggota lain.
 
-`main` harus dapat dijalankan. Dependency lockfile wajib ikut perubahan dependensi. Jangan commit hasil build, database, media upload, keystore atau kredensial. Simpan APK di Release bila tim membuat rilis, bukan di riwayat source.
+Jalankan `cd src && ./scripts/test.sh`. Perubahan native Android juga memerlukan emulator dan `./scripts/e2e.sh`. Database benchmark/test disposable dan tidak boleh digunakan paralel oleh dua test runner. Jangan commit `.env`, signing key, database/media atau output build. Perubahan schema memakai migrasi baru; perubahan API memperbarui OpenAPI, model dan tests terkait.
 
-Ruang kerja modul: autentikasi/akun; katalog/penawaran; checkout/pembayaran demo; pickup/offline/notifikasi; pengaduan/ulasan/payout demo; pengujian/operasi. Pembagian orang mengikuti issue/PR yang benar-benar dikerjakan. Baseline awal hasil penyiapan source tidak menggantikan bukti kontribusi masing-masing anggota menurut M9.
-
-Pengumpulan resmi M9 memakai tag `v9.0` atau revisi `v9.x` pada repo fork akademik sebelum 11 November 2026 21.50 WIB. Sinkronkan source final ke `src/` repo tersebut dan perbarui laporan, AI usage dan logbook sesuai pekerjaan nyata. Push di repo source ini tidak otomatis menjadi pengumpulan akademik.
+Source berada di `src/`, laporan di `docs/M9/`. Dokumen milestone lama tetap dipertahankan. Release/tag pengumpulan dibuat sesuai ketentuan dan waktu sebenarnya; tidak dibuat otomatis oleh proses integrasi ini.

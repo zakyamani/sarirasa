@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 root=$(cd -- "$(dirname -- "$0")/.." && pwd)
+export TEST_DATABASE_URL="${TEST_DATABASE_URL:-postgres://sisarasa_test:disposable-test-only@127.0.0.1:${TEST_DB_HOST_PORT:-55433}/sisarasa_test}"
 (cd "$root/backend" && npm run test:e2e)
 "$root/scripts/health.sh"
 "$root/scripts/native-test.sh" integration_test/marketplace_test.dart

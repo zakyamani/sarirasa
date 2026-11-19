@@ -1,5 +1,5 @@
-import type { Tx } from '../../core/contracts.js';
-import type { OfferInput } from './schema.js';
+import type {Tx} from '../../core/contracts.js';
+import type {OfferInput} from './schema.js';
 export type OfferRecord = {
   id: string;
   seller_id: string;

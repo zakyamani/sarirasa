@@ -1,3 +1,5 @@
+import 'test_config.dart';
+
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -29,7 +31,7 @@ void main() {
         );
       final s = await AppServices.create(
         storage: nativeStorage,
-        initialOrigin: 'http://10.0.2.2:3100',
+        initialOrigin: integrationApiOrigin,
         dio: dio,
       );
       final id = await nativeStorage.read('integration.order_id');

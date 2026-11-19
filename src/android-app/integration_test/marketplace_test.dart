@@ -1,3 +1,5 @@
+import 'test_config.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -21,14 +23,14 @@ void main() {
     (tester) async {
       final buyer = await AppServices.create(
         storage: nativeStorage,
-        initialOrigin: 'http://10.0.2.2:3100',
+        initialOrigin: integrationApiOrigin,
       );
       await buyer.sessions.clear();
       final seller = await AppServices.create(
         storage: const PlatformSecureStore(
           prefix: 'sisarasa.integration.seller.',
         ),
-        initialOrigin: 'http://10.0.2.2:3100',
+        initialOrigin: integrationApiOrigin,
       );
       await seller.sessions.clear();
       final stamp = DateTime.now().microsecondsSinceEpoch;

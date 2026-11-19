@@ -1,10 +1,10 @@
-import { Router } from 'express';
-import { z } from 'zod';
-import type { Dependencies } from '../../core/contracts.js';
-import { authenticated, context } from '../../core/auth.js';
-import { asyncRoute } from '../../core/http.js';
-import { pageSchema } from '../../core/pagination.js';
-import { OfferService } from './service.js';
+import {Router} from 'express';
+import {z} from 'zod';
+import type {Dependencies} from '../../core/contracts.js';
+import {authenticated, context} from '../../core/auth.js';
+import {asyncRoute} from '../../core/http.js';
+import {pageSchema} from '../../core/pagination.js';
+import {OfferService} from './service.js';
 export function offerRoutes(deps: Dependencies) {
   const r = Router();
   const s = new OfferService(deps);

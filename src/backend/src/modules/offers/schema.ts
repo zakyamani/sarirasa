@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { allergens, categories } from '../../core/labels.js';
-import { ApiError } from '../../core/errors.js';
+import {z} from 'zod';
+import {allergens, categories} from '../../core/labels.js';
+import {ApiError} from '../../core/errors.js';
 export const offerSchema = z
   .object({
     category: z.enum(categories),

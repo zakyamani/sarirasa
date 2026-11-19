@@ -1,9 +1,9 @@
-import type { Dependencies, ServiceContext, Tx } from '../../core/contracts.js';
-import { role } from '../../core/auth.js';
-import { requireState } from '../../core/errors.js';
-import { decodeCursor, encodeCursor } from '../../core/pagination.js';
-import { OfferRepository, type OfferRecord } from './repository.js';
-import { validateOffer } from './schema.js';
+import type {Dependencies, ServiceContext, Tx} from '../../core/contracts.js';
+import {role} from '../../core/auth.js';
+import {requireState} from '../../core/errors.js';
+import {decodeCursor, encodeCursor} from '../../core/pagination.js';
+import {OfferRepository, type OfferRecord} from './repository.js';
+import {validateOffer} from './schema.js';
 export class OfferService {
   private repo = new OfferRepository();
   constructor(private deps: Dependencies) {}

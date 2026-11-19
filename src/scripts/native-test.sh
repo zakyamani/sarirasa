@@ -5,13 +5,19 @@ export PATH="${ANDROID_HOME:-$HOME/Android/Sdk}/platform-tools:$PATH"
 serial=${ANDROID_SERIAL:-emulator-5580}
 target=${1:?integration_test file relative to android-app is required}
 name=$(basename "$target" .dart)
+native_origin=${TEST_API_BASE:-http://10.0.2.2:3100}
+dart_defines=$(python3 - "$native_origin" <<'PYCODE'
+import base64,sys
+print(base64.b64encode(('TEST_API_BASE='+sys.argv[1]).encode()).decode())
+PYCODE
+)
 mkdir -p "$root/.superpowers" "$root/artifacts/screenshots"
 cd "$root/android-app"
 # Flutter prepares the ignored Gradle wrapper and SDK configuration on a fresh clone.
-flutter build apk --debug --target "$target" --target-platform android-x64 > "$root/.superpowers/native-$name-prepare.log" 2>&1
+flutter build apk --debug --target "$target" --target-platform android-x64 --dart-define="TEST_API_BASE=$native_origin" > "$root/.superpowers/native-$name-prepare.log" 2>&1
 cd android
 ANDROID_SERIAL="$serial" ./gradlew app:assembleDebug app:assembleDebugAndroidTest \
-  -Ptarget="$root/android-app/$target" -Ptarget-platform=android-x64 > "$root/.superpowers/native-$name-build.log" 2>&1
+  -Ptarget="$root/android-app/$target" -Ptarget-platform=android-x64 -Pdart-defines="$dart_defines" > "$root/.superpowers/native-$name-build.log" 2>&1
 adb -s "$serial" install -r ../build/app/outputs/apk/debug/app-debug.apk > /dev/null
 adb -s "$serial" install -r ../build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk > /dev/null
 adb -s "$serial" shell am force-stop id.sisarasa.sisarasa_app

@@ -1,268 +1,123 @@
-<p><a href="../README.md">← Ringkasan proyek</a></p>
+# SisaRasa
 
-<img src="docs/assets/readme/hero.svg" alt="SisaRasa — aplikasi Android pemesanan paket surplus makanan." width="1200" />
-
-# Dokumentasi SisaRasa
-
-Android marketplace paket kejutan surplus makanan: penjual menerbitkan paket yang masih layak, pembeli memesan dengan diskon 50–70%, lalu mengambilnya memakai QR atau OTP. Identitas gerai dibuka sesudah pembayaran. Pembayaran dan pencairan dijelaskan pada [catatan](#catatan).
-
-<p><img src="docs/assets/readme/stack.svg" alt="Android, Flutter, Node.js dan PostgreSQL" width="1200" /></p>
-
-## Daftar isi
-
-- [Teknologi](#teknologi)
-- [Struktur folder](#struktur-folder)
-- [Arsitektur](#arsitektur)
-- [Alur transaksi](#alur-transaksi)
-- [Database dan penyimpanan](#database-dan-penyimpanan)
-- [Mulai lokal](#mulai-lokal)
-- [Konfigurasi](#konfigurasi)
-- [Fitur](#fitur)
-- [Coba aplikasi](#coba-aplikasi)
-- [Mengerjakan issue](#mengerjakan-issue)
-- [Pengujian lokal](#pengujian-lokal)
-- [Build release dan operasi](#build-release-dan-operasi)
-- [Masalah umum](#masalah-umum)
+Aplikasi Android pemesanan paket surplus makanan. Source terdiri dari **backend** (`backend/`) dan **aplikasi Android** (`android-app/`). Keduanya diintegrasikan dalam monorepo ini.
 
 ## Teknologi
 
-Diuji dengan Flutter **3.47.2**, Dart **3.13.2**, Node **22.18**, TypeScript **7.0.2**, Express **4.22**, PostgreSQL **15**, Docker Compose, Python **3.12**, JDK **21**, Android SDK **36**. Android minimum **10/API29**. Versi dependensi terikat di [package-lock.json](backend/package-lock.json) dan [pubspec.lock](android-app/pubspec.lock).
-
-## Struktur folder
-
-Struktur dari root repo:
-
-| Bagian | Fungsi |
+| Komponen | Versi pengujian |
 | --- | --- |
-| `android-app/` | Tampilan, controller, perangkat dan cache tiket |
-| `backend/` | HTTP, aturan transaksi, SQL, notifikasi dan worker |
-| `scripts/`, `deploy/` | Menjalankan, menguji, build dan operasi |
-| `design/`, `docs/` | Desain dan laporan pengujian |
+| Flutter / Dart | 3.47.2 / 3.13.2 |
+| Node.js / TypeScript / Express | 22.18 / 7.0.2 / 4.22 |
+| Database | PostgreSQL 15 |
+| Android | min SDK29, compile/target SDK36; emulator pengujian API35 |
+| Build dan operasi | JDK21, Docker Compose, Python3.12 |
 
-<details>
-<summary><strong>Buka struktur folder lengkap</strong></summary>
+Dependensi dikunci melalui `backend/package-lock.json` dan `android-app/pubspec.lock`.
 
-```text
-sarirasa/
-├── README.md                       Ringkasan proyek
-├── CONTRIBUTING.md                 Branch, issue, PR dan review tim
-├── SECURITY.md                     Aturan kredensial dan pelaporan
-├── .github/
-│   ├── ISSUE_TEMPLATE/             Form bug dan usulan
-│   ├── pull_request_template.md    Template pull request
-│   └── workflows/ci.yml            Backend/PostgreSQL dan Flutter di CI
-├── docs/                           Laporan M9, AI usage dan logbook
-└── src/                            Seluruh implementasi sesuai M9
-    ├── README.md                   Panduan utama aplikasi ini
-    ├── .env.example                Daftar konfigurasi tanpa rahasia
-    ├── android-app/
-    │   ├── lib/
-    │   │   ├── main.dart           Startup dan konfigurasi build
-    │   │   ├── app.dart            Root aplikasi dan navigasi peran
-    │   │   ├── app_services.dart   Perakitan API, sesi, tiket dan notifikasi
-    │   │   ├── core/               API, model, storage, tema dan widget bersama
-    │   │   └── features/           auth, buyer, seller, orders, notifications, settings
-    │   ├── android/                Manifest, permission, Gradle dan plugin native
-    │   ├── assets/fonts/           Font beserta lisensinya
-    │   ├── test/                   Unit, controller, widget dan aksesibilitas
-    │   └── integration_test/       Enam skenario native Android
-    ├── backend/
-    │   ├── src/
-    │   │   ├── index.ts            Startup HTTP API
-    │   │   ├── app.ts              Middleware, route dan WebSocket server
-    │   │   ├── worker.ts           Proses job/outbox di background
-    │   │   ├── core/               Database, auth, crypto, error dan kontrak bersama
-    │   │   └── modules/            Route, service, repository dan schema per fitur
-    │   ├── migrations/             SQL bernomor, constraint dan index
-    │   ├── scripts/                Migrasi, seed dan test runner backend
-    │   ├── test/                   Unit, integration, e2e, operasi dan profiling
-    │   └── openapi.yaml            Kontrak API
-    ├── scripts/                    Operator setup/start/stop/backup/test/build
-    ├── compose.yaml               API, worker, migrasi dan PostgreSQL lokal
-    ├── compose.test.yaml          PostgreSQL disposable untuk test
-    ├── compose.vps.yaml           Tambahan Caddy HTTPS untuk VPS
-    ├── cloudflared/                Konfigurasi tunnel opsional
-    ├── deploy/                     Reverse proxy dan timer backup
-    ├── design/                     Desain FigCraft final dan inventaris layar
-    ├── docs/                       Operasi, traceability, screenshot dan bukti test
-    └── tests/README.md             Indeks lokasi pengujian lintas toolchain
-```
-
-</details>
-
-`node_modules/`, `build/`, `.dart_tool/`, `.env`, `.secrets/`, `uploads/`, `backups/` dan APK pada `artifacts/` dibuat lokal dan diabaikan Git. Clone baru tidak membutuhkan salinan folder hasil build dari pengembang lain.
-
-## Arsitektur
-
-Sistem memakai **client-server dengan layer per fitur**. Flutter menangani interaksi/perangkat; API memegang aturan bisnis dan otorisasi; PostgreSQL menyimpan state transaksi. API dan worker adalah dua proses dari source backend yang sama. Worker memakai PostgreSQL sebagai penyimpanan antrean, tanpa Redis atau akun message broker tambahan.
-
-<img src="docs/assets/readme/architecture.svg" alt="Alur Flutter ke API dan PostgreSQL, dengan media privat serta worker background." width="1200" />
-
-<details>
-<summary>Diagram versi teks</summary>
+## Struktur dan arsitektur
 
 ```text
-Android Flutter
-  screen → controller/repository → ApiClient
-          │ HTTPS JSON / WSS
-          ▼
-Caddy HTTPS (VPS; pada development API diakses langsung)
-          ▼
-Express API: middleware → route → service → repository
-          │ transaksi SQL                 │ media privat
-          ▼                               ▼
-PostgreSQL                            uploads/
-  orders / ledger / audit / jobs / outbox
-          ▲
-          │ klaim job, retry, expiry, refund, payout, publikasi outbox
-Worker background
+src/
+  android-app/
+    lib/main.dart          Startup aplikasi
+    lib/app.dart           Navigasi pembeli dan mitra
+    lib/core/              Model, API, sesi, secure storage, tema dan widget
+    lib/features/          Auth, katalog, penawaran, checkout, pickup, riwayat, ulasan
+    test/                  Unit/controller/widget
+    integration_test/      Pengujian Android native
+    android/               Manifest, Gradle dan konfigurasi perangkat
+  backend/
+    src/index.ts           Startup HTTP
+    src/app.ts             Middleware, route dan WebSocket
+    src/worker.ts          Job/outbox background
+    src/core/              Database, autentikasi, crypto dan efek transaksi
+    src/modules/           Route → service → repository per fitur
+    migrations/            Skema, constraint dan index SQL
+    scripts/               Migrasi, seed dan test runner
+    test/                  Unit, PostgreSQL, e2e, operasi dan profiling
+    openapi.yaml           Kontrak API
+  scripts/                 Setup, operasi, pengujian dan build APK
+  compose*.yaml            Runtime lokal, PostgreSQL test dan profil VPS
+  deploy/                  Caddy dan backup timer opsional
+  docs/                    Panduan operasi, hasil test dan review integrasi
 ```
 
-</details>
+Flutter berkomunikasi dengan API melalui HTTP pada debug lokal atau HTTPS pada release. API menegakkan otorisasi, validasi, reservasi kuota dan aturan status di dalam transaksi PostgreSQL. Worker memakai database yang sama untuk expiry, no-show, refund, payout simulasi dan outbox. WebSocket mengirim pembaruan; inbox persisten menyimpan event saat aplikasi tidak tersambung.
 
-### Flutter
+Tiket paid disimpan pada secure storage per akun. Pembeli dapat membukanya offline, tetapi validasi QR/OTP oleh mitra tetap online. API, worker dan database dijalankan terpisah oleh Compose; tidak membutuhkan akun cloud untuk pengujian lokal.
 
-- **Screen** membangun widget, menampilkan state/error dan menerima tindakan pengguna. Screen tidak mengakses database atau menetapkan keberhasilan pembayaran sendiri.
-- **Controller/repository fitur** menjalankan permintaan, validasi form, state loading dan pemulihan operasi. `features/buyer/` menangani katalog/alergen; `seller/` penawaran/profil/scan; `orders/` checkout, tiket, riwayat, pengaduan dan ulasan.
-- **Core API/storage** menangani autentikasi request, refresh token, perubahan sesi, upload dan cache tiket. `SessionStore` memisahkan akun; `TicketCache` menyimpan tiket paid melalui secure storage. Gagal jaringan dapat memakai tiket tersimpan, sedangkan validasi pickup tetap harus online.
-- **Tema/widget bersama** pada `core/theme/` dan `core/widgets/` menjaga warna, font, spacing kontrol dan ilustrasi tas. `AppServices` merakit dependensi sehingga test dapat mengganti HTTP/storage tanpa memalsukan perilaku server dalam test integrasi backend.
+## Instalasi dan menjalankan lokal
 
-### Backend
+Prasyarat Linux: Git, Docker Engine dengan plugin Compose, Python3.12+, Node22/npm. Untuk aplikasi pasang Flutter3.47.2, JDK21, Android SDK36/build tools36, lalu jalankan `flutter doctor` dan terima lisensi Android.
 
-Setiap fitur pada `backend/src/modules/` memisahkan **route** (HTTP/identitas), **schema** bila diperlukan (bentuk input), **service** (aturan dan transaksi) dan **repository** (query parameterized). Modul kecil dapat memakai sebagian lapisan tersebut. Aturan kuota, kepemilikan dan status tetap ditegakkan di backend, walaupun UI juga melakukan validasi agar pengguna mendapat pesan cepat.
-
-`core/db.ts` mengelola koneksi/transaksi; `core/auth.ts` otorisasi; `core/crypto.ts` hashing/enkripsi; `core/effects.ts` mencatat efek ledger/audit/notifikasi/job dalam transaksi terkait. Foreign key, unique/check constraint dan row lock melindungi state saat request bersamaan. `Idempotency-Key` memungkinkan retry checkout kembali ke transaksi yang sama.
-
-### Worker dan notifikasi
-
-`worker.ts` memeriksa job/outbox berkala. Job persisten mencakup kedaluwarsa pembayaran, no-show, refund toko tutup, settlement payout simulasi dan cleanup. Klaim memakai row lock, lease dan token lease; job yang gagal dapat dicoba kembali dengan jeda meningkat. Efek bisnis dirancang idempotent agar retry tidak menggandakan saldo/refund.
-
-Notifikasi berasal dari outbox/inbox persisten. WebSocket menyampaikan pembaruan saat tersambung; cursor catch-up menyusulkan event yang terlewat. Foreground monitoring Android bersifat opt-in dan dapat dihentikan sistem. Inbox tetap menjadi sumber riwayat, sehingga layanan tidak menjanjikan push selalu hidup ketika aplikasi mati.
-
-## Alur transaksi
-
-<img src="docs/assets/readme/journey.svg" alt="Terbitkan, pesan, ambil dan selesaikan paket." width="1200" />
-
-1. **Penawaran:** mitra membuat paket, kuota, harga, alergen dan jadwal; server memeriksa kelayakan input dan aturan diskon/waktu. Pembeli mendapat katalog anonim tanpa identitas gerai sebelum paid.
-2. **Checkout:** server menahan satu kuota dalam transaksi dan menerbitkan invoice. Retry dengan idempotency key yang sama memakai hasil sebelumnya. Kuota yang ditahan tidak dapat dibeli ulang oleh pembeli lain.
-3. **Pembayaran demo:** callback terverifikasi memindahkan order ke paid atau membatalkannya sesuai hasil/deadline. Pembayaran sukses menerbitkan QR/OTP dan membuka gerai. Callback duplikat tidak menggandakan penjualan.
-4. **Pengambilan:** pembeli menunjukkan tiket; mitra memindai QR atau memasukkan kode pesanan dan OTP. Backend memeriksa pemilik, jadwal dan token sekali pakai sebelum menyelesaikan order. Tiket offline hanya sarana menampilkan bukti tersimpan.
-5. **Setelah transaksi:** order selesai dapat diulas. Pengaduan/pembatalan mengikuti aturan status dan dapat menahan atau membatalkan payout simulasi. Worker menangani tenggat dan settlement; riwayat mencatat perubahan status.
-
-## Database dan penyimpanan
-
-Skema beserta **atribut, tipe, foreign key, constraint dan index** adalah sumber kebenaran di [001_initial.sql](backend/migrations/001_initial.sql) dan [002_background_indexes.sql](backend/migrations/002_background_indexes.sql). Migrasi bernomor memiliki checksum dan dijalankan lewat script migrasi; jangan mengedit SQL migrasi yang sudah diterapkan pada deployment.
-
-| Kelompok | Tabel | Fungsi |
-| --- | --- | --- |
-| Identitas | `users`, `sessions`, `merchant_profiles` | Akun/peran, sesi refresh dan profil mitra |
-| Marketplace | `offers`, `orders`, `checkout_reservations` | Penawaran, snapshot pesanan, kuota dan reservasi |
-| Pembayaran | `payment_intents`, `payment_events`, `refunds` | Invoice, deduplikasi callback dan refund demo |
-| Pengambilan | `pickup_credentials` | Credential QR/OTP yang terikat pesanan |
-| Media/pengaduan | `media_assets`, `complaints`, `complaint_media` | Media privat, laporan dan bukti |
-| Keuangan demo | `payout_entitlements`, `payout_events`, `ledger_entries` | Hak pencairan, event dan pencatatan nominal |
-| Riwayat/ulasan | `reviews`, `audit_logs` | Ulasan pesanan selesai dan jejak perubahan |
-| Background/notifikasi | `notifications`, `outbox`, `jobs` | Inbox, pengiriman event dan pekerjaan persisten |
-| Pengamanan request | `idempotency_keys`, `rate_buckets`, `ws_tickets` | Retry aman, pembatasan percobaan dan tiket WebSocket |
-
-Database berada pada volume Docker; berkas media pada `uploads/` dengan akses privat. Tiket perangkat berada di secure storage Android. Ketiganya memiliki fungsi berbeda: cache ponsel tidak menggantikan database, dan backup database saja tidak cukup untuk memulihkan media/kunci dekripsi. Prosedur lengkap ada di [operasi](docs/operations.md).
-
-## Mulai lokal
-
-Prasyarat Linux: Git, Docker Engine dengan plugin Compose, Python 3.12+, Node 22 dan npm. Pengguna harus dapat menjalankan `docker` tanpa prompt interaktif. Untuk Android pasang Flutter 3.47.2, JDK21, SDK36/build tools36 serta terima lisensi Android dengan `flutter doctor --android-licenses`. Periksa `flutter doctor` sebelum build.
+Dari root repo:
 
 ```bash
-git clone https://github.com/aniceswan/sarirasa.git
-cd sarirasa/src
+cd src
 ./scripts/setup.sh
 ./scripts/start.sh
 ./scripts/health.sh
 ./scripts/seed.sh
 ```
 
-Setup membuat `.env` privat dengan secret acak, membangun image, menyiapkan PostgreSQL dan menjalankan migrasi. Tidak memerlukan akun layanan cloud. Seed opsional membuat akun/penawaran **fiktif**; kredensial baru tersimpan di `.secrets/demo-access.txt` (hanya pengguna lokal yang dapat membaca). File tersebut memuat akun pembeli dan mitra. Seed tidak dijalankan otomatis dan tidak mereset akun lama. Penawaran contoh berakhir dalam dua jam; buat ulang penawaran melalui akun mitra jika habis. Registrasi kedua peran juga tersedia dari aplikasi.
+Setup membuat `.env` privat dengan secret acak, membangun image, menyiapkan database dan menjalankan migrasi. Project Compose `sisarasa-academic` terpisah dari repo referensi `sarirasa`. API default `127.0.0.1:3100`, PostgreSQL `127.0.0.1:55432`.
 
-API lokal: `http://127.0.0.1:3100`; health: `/health/ready`. Database hanya bind localhost port55432. Bila port dipakai proyek lain, jalankan setup pertama dengan `API_HOST_PORT=3101 DB_HOST_PORT=55435 ./scripts/setup.sh`, lalu sesuaikan `API_BASE` pada build Android. Semua konfigurasi ada di [.env.example](.env.example). Jangan mengganti secret yang sudah dipakai pada database/tiket lama.
-
-Jalankan di emulator Android:
+Jika port sudah terpakai, pilih port saat setup pertama:
 
 ```bash
-cd android-app
+API_HOST_PORT=3101 DB_HOST_PORT=55437 ./scripts/setup.sh
+./scripts/start.sh
+```
+
+Jangan mengubah secret/database deployment yang sudah berisi tiket hanya untuk mengganti port. Seluruh nama variabel ada di [.env.example](.env.example); `APP_UID`/`APP_GID` mengikuti operator Linux agar media privat dapat dibaca proses backup tanpa membuka izin publik.
+
+Untuk emulator Android, dari folder `src/android-app`:
+
+```bash
 flutter pub get --enforce-lockfile
 flutter run --dart-define=API_BASE=http://10.0.2.2:3100
 ```
 
-`10.0.2.2` adalah jembatan emulator ke host. Pada HP fisik gunakan endpoint HTTPS yang dapat dijangkau; [panduan VPS](docs/vps-deployment.md) dan [operasi/tunnel](docs/operations.md) menjelaskan setup operator. HTTP hanya di debug. Origin diatur saat build; pengguna tidak perlu melihat IP, URL server, UUID internal atau mengubah konfigurasi jaringan. Kontrol operator hanya muncul jika sengaja dibuild dengan `--dart-define=DEVELOPER_SETTINGS=true`.
+Sesuaikan3100 dengan port backend. `10.0.2.2` mengarah ke host emulator. HP fisik memerlukan endpoint HTTPS yang dapat dijangkau; lihat [operasi](docs/operations.md) dan [VPS](docs/vps-deployment.md). Pengaturan server tersembunyi dari UI normal; build operator khusus dapat mengaktifkan `DEVELOPER_SETTINGS=true`.
 
-## Konfigurasi
+## Akun dan data uji
 
-Setup pertama menghasilkan `.env` privat; contoh nama variabel ada di [.env.example](.env.example). Konfigurasi server dibaca saat proses dimulai; konfigurasi aplikasi ditetapkan ketika Flutter dibuild.
+`seed.sh` dijalankan eksplisit, menghasilkan akun pembeli dan mitra **fiktif**. Kredensial tersedia lokal pada `.secrets/demo-access.txt` (privat dan tidak masuk Git). Seed tidak mereset akun lama; penawaran contoh berakhir dua jam setelah seed. Registrasi kedua peran juga tersedia melalui aplikasi.
 
-| Variabel | Pemakaian |
+Alur uji: mitra melengkapi profil dan membuat penawaran → pembeli checkout/pembayaran → pembeli menunjukkan QR/OTP → mitra memvalidasi dalam jadwal → pembeli memberi ulasan. Gunakan dua emulator/perangkat atau ganti akun; logout menghapus cache tiket akun tersebut. Untuk pengaduan gunakan order paid yang belum diselesaikan.
+
+## Modul dan pembagian tugas
+
+| Anggota | Pembagian |
 | --- | --- |
-| `POSTGRES_PASSWORD`, `DATABASE_URL` | Kredensial dan koneksi PostgreSQL; dihasilkan setup, tidak dipublikasikan |
-| `ACCESS_SECRET` | Penandatanganan access token |
-| `CALLBACK_SECRET` | Verifikasi callback gateway demo; terpisah dari secret autentikasi |
-| `PICKUP_KEY` | Kunci enkripsi credential pickup; pertahankan bersama backup |
-| `FEE_BPS` | Fee simulasi dalam basis point; default500 =5% |
-| `API_HOST_PORT`, `DB_HOST_PORT` | Port localhost API/database; default3100/55432 |
-| `APP_UID`, `APP_GID` | UID/GID container non-root; setup mengikuti operator lokal, fallback1000 bila dijalankan root |
-| `TRUST_PROXY`, `CORS_ORIGINS` | Proxy yang dipercaya dan origin browser yang diizinkan; jangan mempercayai semua alamat proxy |
-| `MEDIA_DIR` | Lokasi media dalam container |
-| `PUBLIC_HOST` | Hostname HTTPS untuk profil VPS/Caddy |
-| Flutter `API_BASE` | Origin API pada `--dart-define`; HTTPS untuk release |
-| Flutter `DEVELOPER_SETTINGS` | Defaultfalse; kontrol server hanya untuk build operator yang sengaja mengaktifkannya |
-| `SISARASA_SIGNING_FILE` | Path privat signing configuration bila tidak memakai lokasi default proyek |
-| `ANDROID_SERIAL` | Emulator khusus yang dipakai native runner |
+| Atan | Fondasi Express/Flutter, UC04 pesanan real-time; README, B.2.1 dan B.3 |
+| Devina | UC01/UC02 katalog, alergen dan penawaran; B.1/B.5 C02–C03 dan bukti B.2 |
+| Bintang | UC03 checkout, tiket dan gateway pembayaran; B.1/B.5 C04–C07 dan bukti B.2 |
+| Jaki | UC05/UC06 scan, OTP, cache offline dan pengaduan/refund; B.1/B.5 C08–C09 |
+| Nabil | Auth, UC07 riwayat/ulasan dan integrasi akhir; B.1/B.5 C10–C11, B.4 dan pemeriksaan tautan B.2 |
 
-IP/URL server dibutuhkan **operator** untuk build/deployment dan tidak muncul pada UI pengguna normal. Jangan memasukkan nilai rahasia ke file contoh atau issue publik.
+UC03 pada hasil integrasi ini dimasukkan Nabil dari source referensi atas persetujuannya, karena belum masuk melalui PR Bintang. Riwayat commit tidak dibuat atas nama Bintang. Catatan source/perubahan teman-teman: [review integrasi](docs/integration-review.md).
 
-## Fitur
+## Database
 
-| Use case | Implementasi |
+Atribut, tipe, foreign key dan constraint lengkap: [001_initial.sql](backend/migrations/001_initial.sql), [002_background_indexes.sql](backend/migrations/002_background_indexes.sql).
+
+| Kelompok | Tabel |
 | --- | --- |
-| UC01 | Penawaran, diskon, kuota, delapan alergen, jadwal/batas konsumsi, konfirmasi kelayakan dan aturan edit/tutup |
-| UC02 | Katalog anonim, kategori/filter alergen, lokasi opsional dan perkiraan jarak |
-| UC03 | Checkout idempotent, invoice, pembayaran demo berhasil/gagal/kedaluwarsa, identitas gerai setelah paid |
-| UC04 | Dashboard mitra, pesanan/jadwal, inbox persisten dan pembaruan pesanan |
-| UC05 | QR sekali pakai, OTP, validasi online, tiket terenkripsi yang dapat dibuka offline |
-| UC06 | Pengaduan dengan bukti privat, approve/reject, pembatalan dan refund, no-show dan worker timeout |
-| UC07 | Riwayat status, ulasan hanya pesanan selesai, metrik paket terselamatkan dan pencairan simulasi |
+| Akun dan gerai | `users`, `sessions`, `merchant_profiles` |
+| Marketplace | `offers`, `orders`, `checkout_reservations` |
+| Pembayaran/pickup | `payment_intents`, `payment_events`, `pickup_credentials`, `refunds` |
+| Pengaduan/media | `complaints`, `complaint_media`, `media_assets` |
+| Keuangan | `payout_entitlements`, `payout_events`, `ledger_entries` |
+| Ulasan/audit | `reviews`, `audit_logs` |
+| Background/notifikasi | `notifications`, `outbox`, `jobs` |
+| Pengamanan request | `idempotency_keys`, `rate_buckets`, `ws_tickets` |
 
-[Pemetaan kebutuhan/kelas](docs/traceability.md) · [Kontrak API](backend/openapi.yaml) · [Skema dan atribut database](backend/migrations/001_initial.sql) · [Alur kerja tim](../CONTRIBUTING.md). Pembagian modul dan kontribusi anggota dicatat melalui issue dan PR.
+Database menggunakan volume Docker; media ada di `uploads/`; cache perangkat berada di secure storage. `stop.sh` tidak menghapus database/media. Jangan memakai `docker compose down -v` pada data yang perlu dipertahankan.
 
-## Coba aplikasi
+## Pengujian
 
-1. Jalankan backend, migrasi dan seed; baca kredensial fiktif dari `.secrets/demo-access.txt`, atau registrasikan akun pembeli dan mitra sendiri.
-2. Masuk sebagai mitra, lengkapi profil/lokasi gerai, lalu buat penawaran yang jadwal dan batas konsumsinya masih berlaku. Konfirmasi kelayakan makanan wajib dipilih secara sadar.
-3. Masuk sebagai pembeli pada emulator/perangkat kedua, atau keluar lalu ganti akun. Telusuri kategori/alergen, pilih paket dan checkout. Periksa simulasi sukses/gagal pada pembayaran.
-4. Setelah sukses, buka alamat gerai serta tiket. Mitra melakukan validasi dalam jadwal pengambilan melalui scan atau kode pesanan/OTP. Untuk demo satu perangkat, catat kode sebelum berganti akun karena logout menghapus tiket privat lokal.
-5. Setelah selesai, pembeli dapat memberi ulasan; mitra memeriksa riwayat dan keuangan demo. Gunakan pesanan paid lain untuk mencoba pengaduan/pembatalan sebelum pickup.
-6. Untuk uji offline, sinkronkan tiket paid terlebih dahulu, tetap berada pada akun pembeli yang sama, lalu putuskan jaringan. Tiket tersimpan dapat dibuka; penyelesaian oleh mitra tetap online.
-
-Jangan memakai data bank nyata. Untuk pengujian waktu/expiry yang terkontrol gunakan integration test dengan clock fixture; tidak ada endpoint publik untuk mengubah waktu atau mereset database.
-
-## Mengerjakan issue
-
-| Perubahan | Mulai dari |
-| --- | --- |
-| Warna, tipografi, tombol, ilustrasi | `android-app/lib/core/theme/` dan `core/widgets/` |
-| Login, akun dan sesi | `features/auth/`, `core/storage/`, `backend/src/modules/auth/` |
-| Katalog/filter dan penawaran mitra | Flutter `features/buyer/`, `features/seller/`; backend `catalog/`, `offers/`, `merchants/` |
-| Checkout/pembayaran dan tiket | Flutter `features/orders/`; backend `orders/`, `payments/`, `pickup/` |
-| Scan dan OTP | Flutter `features/seller/scan_*`, `otp_screen.dart`; backend `pickup/` |
-| Pengaduan, ulasan, payout | Layar/controller fitur terkait; backend `complaints/`, `reviews/`, `payouts/` |
-| Inbox dan background | Flutter `features/notifications/`; backend `notifications/`, `jobs/`, `worker.ts` |
-| Perubahan skema | Tambahkan migrasi bernomor pada `backend/migrations/`, lalu sesuaikan repository/kontrak/test |
-| Deploy/build/backup | `scripts/`, `compose*.yaml`, `deploy/`, panduan `docs/` |
-
-Untuk perubahan kontrak, perbarui [OpenAPI](backend/openapi.yaml), model/parser Flutter dan test terkait bersama-sama. Aturan bisnis harus diuji di service/PostgreSQL, tidak cukup dengan widget test. Ikuti [CONTRIBUTING](../CONTRIBUTING.md) untuk issue, branch, commit dan review anggota lain.
-
-## Pengujian lokal
-
-<img src="docs/assets/readme/evidence.svg" alt="Hasil pengujian lokal 5 November 2026: 47 backend, 63 Flutter, 6 Android native; 53 frame desain." width="1200" />
-
-Dari folder `src/`:
+Dari `src/`:
 
 ```bash
 ./scripts/test.sh
@@ -270,17 +125,26 @@ python3 scripts/test/signing_test.py
 ./scripts/benchmark.sh
 ```
 
-`test.sh`: database PostgreSQL disposable port55433, `npm ci`, typecheck, backend/operasi backup, `flutter pub get`, analyze dan widget/unit test. Benchmark mereset database test yang sama, jadi jalankan berurutan, jangan paralel dengan backend tests. Semua fixture fiktif; data marketplace lokal di port55432 tidak digunakan oleh test.
+`test.sh` menyiapkan PostgreSQL disposable port55433, menginstal dependensi, menjalankan typecheck/backend tests, Flutter analyze dan widget/unit tests. Benchmark mereset database test yang sama: jalankan berurutan. API/database marketplace tidak dipakai oleh fixture test.
 
-Native E2E memerlukan API/worker lokal hidup dan emulator Android15 x86_64 **khusus pengujian**:
+Port test alternatif:
+
+```bash
+TEST_DB_HOST_PORT=55436 ./scripts/test.sh
+TEST_DATABASE_URL=postgres://sisarasa_test:disposable-test-only@127.0.0.1:55436/sisarasa_test ./scripts/benchmark.sh
+```
+
+Native E2E membutuhkan API/worker hidup serta emulator Android15 x86_64 khusus pengujian:
 
 ```bash
 ANDROID_SERIAL=emulator-5580 ./scripts/e2e.sh
+# Jika API lokal memakai3101:
+ANDROID_SERIAL=emulator-5582 TEST_API_BASE=http://10.0.2.2:3101 ./scripts/e2e.sh
 ```
 
-Runner memasang APK debug/instrumentation dan menyesuaikan sementara izin/timeout pada emulator. Jangan memakai HP pribadi berisi data pengguna. Marketplace harus mendahului recovery karena recovery menguji tiket dari proses sebelumnya. Jika build emulator lama ditandatangani dengan key lain, gunakan AVD pengujian kosong. Lihat [hasil verifikasi](docs/verification.md) untuk kondisi dan batas bukti; widget test tidak membuktikan kamera HP fisik.
+Runner menginstal APK debug/instrumentation, menghentikan proses aplikasi dan menyesuaikan sementara izin/timeout Android. Gunakan AVD kosong khusus test, bukan HP berisi data pengguna. Jalankan marketplace sebelum process recovery karena keduanya menguji tiket lintas proses. [Hasil verifikasi](docs/verification.md) membedakan bukti lokal, native dan batas perangkat fisik.
 
-## Build release dan operasi
+## Build dan operasi
 
 ```bash
 ./scripts/setup-signing.sh
@@ -290,29 +154,13 @@ Runner memasang APK debug/instrumentation dan menyesuaikan sementara izin/timeou
 ./scripts/stop.sh
 ```
 
-Signing key/password berada di `.secrets/` dan `android-app/android/key.properties`, tidak masuk Git. Build release menghasilkan `artifacts/sisarasa.apk` dan manifest SHA-256; tidak menggunakan debug key. Simpan APK sebagai asset Release tim, jangan commit binary build. Keystore harus dibackup privat agar update memakai identitas yang sama.
+Release membutuhkan signing privat; tidak memakai debug signature. Hasil APK/checksum ada di `artifacts/`, tidak masuk Git. Keystore, `.env`, media, backup dan hasil instalasi/build juga diabaikan Git. Simpan APK pada asset Release bila tim membuat rilis.
 
-Database/media persisten saat stop. Backup menyertakan dump, media dan recovery secret, memulihkan layanan setelah kegagalan, serta menguji restore di tempat terpisah. Salin backup terenkripsi ke luar host. Jangan menghapus volume atau mengganti `PICKUP_KEY` saat tiket lama masih aktif.
-
-Registrasi merchant belum mencakup verifikasi identitas fisik. Informasi alergen dan batas konsumsi diisi oleh merchant. Pemantauan notifikasi memerlukan izin dan mengikuti batas Android.
-
-## Masalah umum
-
-| Gejala | Pemeriksaan |
-| --- | --- |
-| Port3100/55432 dipakai | Pilih port lain saat setup pertama; sesuaikan API_BASE. Jangan menghentikan proyek lain tanpa memeriksa pemiliknya. |
-| Emulator tidak terhubung | Backend harus ready; emulator memakai `10.0.2.2`, bukan localhost perangkat. Periksa serial lewat `adb devices`. |
-| HP fisik tidak terhubung | Gunakan endpoint HTTPS yang dapat dijangkau perangkat; periksa hostname dan sertifikat pada sisi operator. |
-| Katalog kosong | Penawaran seed hanya berlaku dua jam; periksa kategori/alergen, kuota dan jadwal. Buat penawaran baru melalui mitra. |
-| Pickup ditolak | Periksa jadwal, status paid, kode pesanan/OTP dan kepemilikan mitra. QR tidak berlaku ulang setelah berhasil dipakai. |
-| Install APK gagal karena signature | Gunakan emulator pengujian kosong atau APK dengan key yang sama. Jangan menghapus aplikasi/data pengguna untuk mengatasi test. |
-| Upload/backup gagal izin | Periksa UID/GID dan owner media. Pertahankan akses privat; jangan mengatasi masalah dengan chmod777. |
-| Inbox tidak langsung berubah | Periksa koneksi/izin pemantauan, buka ulang aplikasi atau sinkronkan inbox. Android dapat menghentikan background service. |
-
-Gunakan `./scripts/health.sh` dan log API/worker untuk diagnosis operator. Jangan menyalin `.env`, token, QR/OTP aktif atau bukti pengguna ke issue publik. Lihat [hasil verifikasi](docs/verification.md) untuk batas pengujian yang sudah dibuktikan.
+Backup memuat database, media dan recovery key. Restore uji memakai lingkungan terpisah; salin backup privat ke luar host. Panduan [operasi](docs/operations.md) menjelaskan format, retensi dan pemulihan layanan.
 
 ## Catatan
 
-1. Pembayaran, rekening, fee, refund dan pencairan menggunakan simulasi; tidak ada transfer uang nyata.
-2. Screenshot dan akun uji menggunakan data fiktif.
-3. Pengujian dua HP/kamera fisik, perangkat minimum, baterai OEM dan jaringan3G belum dilakukan. Lihat [laporan pengujian](docs/verification.md).
+1. Pembayaran, rekening, fee, refund dan payout menggunakan simulasi; tidak ada transfer bank nyata.
+2. Alergen dan batas konsumsi diisi mitra. Filter tidak menjamin bebas kontaminasi silang.
+3. Pengujian kamera dua HP, OEM, perangkat fisik API29, jaringan3G dan pemantauan panjang perlu dilakukan terpisah.
+4. Source referensi awal: [sarirasa, commit418b728](https://github.com/aniceswan/sarirasa/tree/418b728). Perubahan integrasi dan hasil pemeriksaan dicatat pada PR, logbook dan deklarasi AI.

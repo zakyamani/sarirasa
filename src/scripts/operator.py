@@ -4,7 +4,7 @@ import fcntl, hashlib, json, os, pathlib, secrets, shutil, subprocess, sys, tarf
 from datetime import datetime, timezone
 ROOT=pathlib.Path(__file__).resolve().parent.parent
 ENV=pathlib.Path(os.getenv('SISARASA_ENV_FILE',str(ROOT/'.env'))).resolve()
-PROJECT=os.getenv('SISARASA_PROJECT','sisarasa')
+PROJECT=os.getenv('SISARASA_PROJECT','sisarasa-academic')
 def run(args, **kw):
     return subprocess.run(args,check=True,**kw)
 def dc(*args, **kw):
@@ -101,7 +101,7 @@ def restore(folder,args):
                 if not p.is_relative_to(media.resolve()) or digest(p)!=h: raise ValueError('Restored media checksum mismatch')
             credentials=run(['docker','exec',name,'psql','-U','sisarasa','-d','sisarasa_restore_test','-At','-c',"SELECT coalesce(json_agg(encrypted_data),'[]'::json) FROM pickup_credentials"],capture_output=True,text=True).stdout
             code="import {decrypt} from './dist/src/core/crypto.js';let raw='';for await (const chunk of process.stdin) raw+=chunk;for(const value of JSON.parse(raw)){const credential=decrypt(value,process.env.PICKUP_KEY);if(!credential.token||!/^\\d{6}$/.test(credential.otp))throw Error('Credential recovery failed')}"
-            run(['docker','run','--rm','-i','--network','none','--env-file',str(folder/'recovery.env'),'sisarasa-api:local','node','--input-type=module','-e',code],input=credentials,text=True,stdout=subprocess.DEVNULL)
+            run(['docker','run','--rm','-i','--network','none','--env-file',str(folder/'recovery.env'),'sisarasa-academic-api:local','node','--input-type=module','-e',code],input=credentials,text=True,stdout=subprocess.DEVNULL)
             result['media_files']=len(rows);result['decryptable_credentials']=result['credentials'];print(json.dumps(result))
         finally: subprocess.run(['docker','rm','-f',name],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 def main():

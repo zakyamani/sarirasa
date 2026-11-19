@@ -159,4 +159,47 @@
 
 
 ---
+
+### Milestone 9
+
+**Periode:** 28-10-2026 - 13-11-2026
+
+| Tanggal      | Nama Anggota                   | Deskripsi Pekerjaan                                                                                             | Durasi (Jam) | Status | Kendala / _Blocker_ |
+| :----------- | :----------------------------- | :-------------------------------------------------------------------------------------------------------------- | :----------- | :----- | :------------------ |
+| _1-11-2026_ | _Devina Athalia Putri Kusumah_                | _Melengkapi tabel B1 perubahan dari DPPL._ | _45 Menit_      | _Done_ | _-_                 |
+| _3-11-2026_ | _Devina Athalia Putri Kusumah_                | _Mengimplementasikan backend UC Offers, meliputi pembuatan struktur data dan validation schema, operasi database pada `offers repository`, serta konfigurasi API endpoints dan routes._ | _3 Jam_      | _Done_ | _-_                 |
+| _3-11-2026_ | _Devina Athalia Putri Kusumah_                | _Mengimplementasikan business logic pada `offers service` untuk menangani proses dan aturan bisnis pengelolaan offers._ | _2 Jam_      | _Done_ | _-_                 |
+| _7-11-2026_ | _Devina Athalia Putri Kusumah_                | _Mengimplementasikan backend UC Catalog, meliputi operasi database pada `catalog repository`, konfigurasi API routes untuk catalog browsing, serta business logic pada `catalog service`._ | _2,5 Jam_      | _Done_ | _-_                 |
+| _7-11-2026_ | _Devina Athalia Putri Kusumah_                | _Mengimplementasikan fitur seller pada Flutter, meliputi pembuatan offer data model, UI `OfferFormScreen` untuk pembuatan dan pengeditan offers, serta `OfferFormController` untuk pengelolaan state dan interaksi form._ | _3 Jam_      | _Done_ | _-_                 |
+| _7-11-2026_ | _Fathar Atandra Denaya_ | _Menyiapkan fondasi arsitektur backend Express, aplikasi Flutter, konfigurasi Docker, environment, database, dan struktur source._ | _2 Jam_ | _Done_ | _-_ |
+| _8-11-2026_ | _Fathar Atandra Denaya_ | _Mengimplementasikan backend UC04 berupa inbox notifikasi, WebSocket `/ws`, ticket sekali pakai, outbox, reconnect, dan cursor catch-up._ | _2 Jam_ | _Done_ | _-_ |
+| _9-11-2026_ | _Fathar Atandra Denaya_ | _Mengimplementasikan sisi Flutter UC04 berupa WebSocket client, notification controller, seller monitoring, dan tampilan daftar pesanan masuk real-time._ | _2 Jam_ | _Done_ | _-_ |
+| _9-11-2026_ | _Devina Athalia Putri Kusumah_                | _Mengimplementasikan fitur buyer pada Flutter, meliputi `CatalogController` untuk pengelolaan state katalog dan `CatalogScreen` sebagai halaman utama untuk menelusuri offers yang tersedia._ | _2,5 Jam_      | _Done_ | _-_                 |
+| _9-11-2026_ | _Devina Athalia Putri Kusumah_                | _Mengimplementasikan halaman detail offer untuk menampilkan informasi penawaran secara spesifik serta `AllergenScreen` untuk menyajikan informasi alergen kepada buyer, dan push semua implementasi._ | _2 Jam_      | _Done_ | _-_                 |
+| _10-11-2026_ | _Fathar Atandra Denaya_ | _Melengkapi dokumentasi M9 bagian B.1, B.2.1 profiling performa, dan B.3 kendala serta batasan implementasi._ | _1 Jam_ | _Done_ | _-_ |
+| _11-11-2026_ | _Fathar Atandra Denaya_                | _Melengkapi tabel B.2._ | _45 Menit_      | _Done_ | _-_                 |
+| _11-11-2026_ | _Muhammad Zaky Amani_ | _Mengimplementasikan UC05 validasi pengambilan pesanan melalui `PindaiQRView`, integrasi `mobile_scanner`, serta caching tiket QR offline. Mengimplementasikan UC06 melalui `PengaduanController` dan alur pengaduan/refund._ | _4 Jam_ | _Done_ | _PR/Commit UC05–UC06_ |
+| _12-11-2026_ | _Fathar Atandra Denaya_                | _Melengkapi form asistensi_ | _15 Menit_      | _Done_ | _-_                 |
+| _12-11-2026_ | _Muhammad Zaky Amani_ | _Melakukan pengujian dan penyempurnaan validasi QR/OTP, pemulihan tiket saat offline, serta alur pengajuan dan pemrosesan pengaduan._ | _2 Jam_ | _Done_ | _Test UC05–UC06_ |
+| 13-11-2026 | Nabil Rabbani | Melengkapi registrasi, login, pengelolaan sesi JWT, serta UC07 riwayat transaksi dan ulasan pada backend dan aplikasi Android. | — | Selesai | — |
+| 13-11-2026 | Nabil Rabbani | Mengintegrasikan modul anggota, termasuk checkout dan pembayaran UC03, serta melengkapi dependensi agar backend dan aplikasi Android dapat dijalankan bersama. | — | Selesai | Beberapa dependensi antarmodul belum tersedia; dilengkapi saat integrasi. |
+| 13-11-2026 | Nabil Rabbani | Menjalankan build backend dan APK Android, 47 pengujian backend, 63 pengujian Flutter, serta 6 skenario E2E Android pada emulator. Seluruh pengujian lulus. | — | Selesai | Lokasi dua file pengujian dan format lima file Dart diperbaiki agar pemeriksaan berjalan. |
+| 13-11-2026 | Nabil Rabbani | Melengkapi dokumentasi M9 bagian B.1/B.5 C10–C11 dan B.4, memeriksa tautan PR/review pada B.2, serta memperbarui README dan catatan penggunaan AI. | — | Selesai | — |
+| _13-11-2026_ | _Muhammad Zaky Amani_ | _Melengkapi dokumentasi M9 Tabel B.1 dan B.5 untuk kelas `QRPickup (C08)` dan `Pengaduan (C09)`, serta menambahkan URL issue, PR, commit, dan review pada Tabel B.2._ | _2 Jam_ | _Done_ | _Dokumentasi M9_ |
+| _13-11-2026_ | _Josephine Bintang N.L_ | _Mengimplementasikan modul UC03 (Checkout & Payment Gateway QRIS/E-Wallet), melengkapi Tabel B.1 (Perubahan DPPL), serta menyusun traceability kelas C04–C07 untuk laporan implementasi M9._ | _2,5 Jam_ | _Done_ | _-_ |
+
+
+---
+
+### Milestone 10
+
+**Periode:** 13-11-2026 - 20-11-2026
+
+| Tanggal      | Nama Anggota                   | Deskripsi Pekerjaan                                   | Durasi (Jam) | Status | Kendala / _Blocker_ |
+| :----------- | :----------------------------- | :---------------------------------------------------- | :----------- | :----- | :------------------ |
+| _17-11-2026_ | _Devina Athalia Putri Kusumah_ | _Mengisi data kelompok dan mengerjakan bagian 4.1_       | _1 Jam_      | _Done_ | _-_ |
+| _18-11-2026_ | _Devina Athalia Putri Kusumah_ | _Mengerjakan Bab 1 dan Bab 2_                            | _1 Jam_      | _Done_ | _-_ |
+
+
+---
 `Gunakan format penulisan Logbook yang sama untuk setiap Milestone dan pastikan pembuatan Daftar Isi juga sudah sesuai sebelum Logbook dikumpulkan. `

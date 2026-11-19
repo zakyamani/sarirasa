@@ -1,6 +1,6 @@
 # Siklus hidup Android
 
-Verifikasi 5 November 2026 menggunakan Android15/API35 x86_64, target SDK36 dan AndroidJUnitRunner pada AVD kosong khusus pengujian. Keenam file integration_test dijalankan ulang terhadap source terbaru; hasil dirangkum di [verification.md](verification.md).
+Verifikasi 13 November 2026 menggunakan Android15/API35 x86_64, target SDK36 dan AndroidJUnitRunner pada AVD kosong khusus pengujian (`emulator-5582`), API repo akademik3101 dan TEST_API_BASE yang diteruskan ke Gradle. Keenam file integration_test dijalankan ulang terhadap source terbaru; hasil dirangkum di [verification.md](verification.md).
 
 - Marketplace menguji secure storage, registrasi lewat API/PostgreSQL, QR berbayar, OTP manual dengan konfirmasi, ulasan dan payout demo.
 - Process recovery memakai APK/proses terpisah sesudah force-stop, socket jaringan diblokir, tiket terenkripsi tetap tampil offline, dan logout menghapus tiket aktor.

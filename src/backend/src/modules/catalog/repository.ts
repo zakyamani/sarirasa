@@ -1,5 +1,5 @@
-import type { Tx } from '../../core/contracts.js';
-import type { OfferRecord } from '../offers/repository.js';
+import type {Tx} from '../../core/contracts.js';
+import type {OfferRecord} from '../offers/repository.js';
 export type CatalogRecord = OfferRecord & { latitude: number; longitude: number };
 export class CatalogRepository {
   async read(

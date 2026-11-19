@@ -1,11 +1,11 @@
-import { Router } from 'express';
-import { z } from 'zod';
-import type { Dependencies } from '../../core/contracts.js';
-import { authenticated, context } from '../../core/auth.js';
-import { asyncRoute } from '../../core/http.js';
-import { pageSchema } from '../../core/pagination.js';
-import { categories } from '../../core/labels.js';
-import { CatalogService } from './service.js';
+import {Router } from 'express';
+import {z } from 'zod';
+import type {Dependencies} from '../../core/contracts.js';
+import {authenticated, context} from '../../core/auth.js';
+import {asyncRoute} from '../../core/http.js';
+import {pageSchema} from '../../core/pagination.js';
+import {categories} from '../../core/labels.js';
+import {CatalogService} from './service.js';
 const coord = z
   .string()
   .regex(/^-?\d+(\.\d+)?$/)
