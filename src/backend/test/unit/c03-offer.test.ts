@@ -5,7 +5,7 @@ import { validateOffer } from '../../src/modules/offers/schema.js';
 const now = new Date('2026-10-05T12:00:00Z');
 function offer(overrides: Record<string, unknown> = {}) {
   return {
-    category: 'siap_saji',
+    category: 'makanan_berat',
     allergens: [],
     quota: 10,
     normal_price: 100000,
@@ -18,9 +18,9 @@ function offer(overrides: Record<string, unknown> = {}) {
   };
 }
 
-test('C03-UT01 getIdPenawaran: offer identifier remains unchanged', () => {
+test('C03-UT01 getIdPenawaran: valid offer details are returned', () => {
   const input = validateOffer(offer(), now);
-  assert.equal(typeof input.category, 'string');
+  assert.equal(input.category, 'makanan_berat');
 });
 
 test('C03-UT02 kurangiKuota: rejects quota zero and accepts lower boundary', () => {
