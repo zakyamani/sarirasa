@@ -159,11 +159,9 @@ test('C11-UT02 OrderService.list decodes history cursor and encodes cursor for a
   } as unknown as Dependencies;
   const result = await new OrderService(deps).list(context('buyer', 'buyer-1'), { cursor, limit: 2 });
 
-  assert.equal(parameters[1], previous.created_at);
+  // decodeCursor returns the ISO timestamp string encoded in the cursor.
+  assert.equal(parameters[1], previous.created_at.toISOString());
   assert.equal(parameters[2], previous.id);
   assert.equal(result.items.length, 2);
   assert.equal(result.next_cursor, encodeCursor({ created_at: rows[1]!.created_at, id: rows[1]!.id }));
 });
-
-// Keep this import used to ensure the test helper types against the repository record shape.
-void order satisfies () => OrderRecord;
