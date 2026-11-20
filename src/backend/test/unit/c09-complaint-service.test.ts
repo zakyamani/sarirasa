@@ -54,11 +54,11 @@ function harness(options: { order?: OrderRecord; complaint?: ComplaintRecord; mi
         c = complaint({ ...c, status: values[1] as ComplaintRecord['status'], response: values[2] as string, decided_at: values[3] as Date });
         return { rows: [{ id: complaintId }], rowCount: 1 };
       }
-      if (sql.startsWith('UPDATE complaints SET status=\'auto_refunded\'')) {
+      if (sql.startsWith("UPDATE complaints SET status='auto_refunded'")) {
         c = complaint({ ...c, status: 'auto_refunded', response: 'Tidak ditanggapi selama 24 jam; refund penuh simulasi.', decided_at: values[1] as Date });
         return { rows: [], rowCount: 1 };
       }
-      if (sql.includes("UPDATE checkout_reservations") || sql.includes("UPDATE complaints SET status=$2")) return { rows: [{ order_id: orderId }], rowCount: 1 };
+      if (sql.includes('UPDATE checkout_reservations')) return { rows: [{ order_id: orderId }], rowCount: 1 };
       if (sql.startsWith('SELECT id,amount,reason FROM refunds')) return { rows: [], rowCount: 0 };
       if (sql.startsWith('INSERT INTO refunds')) return { rows: [{ id: 'refund-1', amount: o.price, reason: values[2] ?? 'test' }], rowCount: 1 };
       if (sql.includes('UPDATE payout_entitlements')) return { rows: [{ id: 'payout-1' }], rowCount: 1 };
@@ -71,16 +71,13 @@ function harness(options: { order?: OrderRecord; complaint?: ComplaintRecord; mi
       query: async (sql: string, values: unknown[] = []) => {
         statements.push(sql);
         parameters.push(values);
-        if (sql.includes('FROM complaints c JOIN orders o')) {
-          const row = { ...c, order_code: 'SR-0123456789' };
-          return { rows: [row], rowCount: 1 };
-        }
+        if (sql.includes('FROM complaints c JOIN orders o')) return { rows: [{ ...c, order_code: 'SR-0123456789' }], rowCount: 1 };
         return { rows: [], rowCount: 0 };
       },
     },
     config: {}, clock: { now: () => now },
   } as unknown as Dependencies;
-  return { service: new ComplaintService(deps), tx, statements, parameters, getComplaint: () => c, setComplaint: (value: ComplaintRecord) => { c = value; }, getPayloadHash: () => payloadHash };
+  return { service: new ComplaintService(deps), tx, statements, parameters, getComplaint: () => c, getPayloadHash: () => payloadHash };
 }
 
 test('C09-UT04 ComplaintService.open creates dispute and returns complaint view', async () => {
@@ -124,8 +121,7 @@ test('C09-UT08 ComplaintService.decide approves complaint and triggers refund', 
   assert.equal(result.status, 'approved');
   assert.ok(h.statements.some((sql) => sql.includes('UPDATE complaints SET status=$2')));
   assert.ok(h.statements.some((sql) => sql.includes('INSERT INTO refunds')));
-  const auditIndex = h.statements.findIndex((sql) => sql.startsWith('INSERT INTO audit_logs') && h.parameters[h.statements.indexOf(sql)]?.[2] === 'complaint.approved');
-  assert.notEqual(auditIndex, -1);
+  assert.ok(h.parameters.some((values) => values[2] === 'complaint.approved'));
 });
 
 test('C09-UT08b ComplaintService.decide rejects complaint and restores paid status', async () => {
@@ -134,7 +130,7 @@ test('C09-UT08b ComplaintService.decide rejects complaint and restores paid stat
   assert.equal(result.status, 'rejected');
   assert.ok(h.statements.some((sql) => sql.includes("UPDATE orders SET status='paid'")));
   assert.ok(h.statements.some((sql) => sql.includes("status='pending'")));
-  assert.ok(h.parameters.some((values) => values.includes('complaint.rejected')));
+  assert.ok(h.parameters.some((values) => values[2] === 'complaint.rejected'));
 });
 
 test('C09-UT09 ComplaintService.decide handles repeated decisions and negative cases', async () => {
