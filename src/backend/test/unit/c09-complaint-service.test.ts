@@ -52,7 +52,10 @@ function harness(options: { order?: OrderRecord; complaint?: ComplaintRecord; mi
   const deps = {
     db: {
       transaction: async (fn: (tx: Tx) => Promise<unknown>) => fn(tx),
-      query: async () => ({ rows: [], rowCount: 0 }),
+      query: async (sql: string, values: unknown[] = []) => {
+        statements.push(sql);
+        return { rows: [], rowCount: 0 };
+      },
     },
     config: {}, clock: { now: () => now },
   } as unknown as Dependencies;
