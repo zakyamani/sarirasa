@@ -278,3 +278,112 @@ test('C04-UT10 OrderService.processNoShow closes expired paid order and schedule
   assert.ok(statements.some((sql) => sql.includes("status='no_show'")));
   assert.ok(statements.some((sql) => sql.includes("'no_show'")));
 });
+
+function checkoutHarness(options: { unavailable?: boolean; allergenConflict?: boolean } = {}) {
+  const statements: string[] = [];
+  const valuesSeen: unknown[][] = [];
+  const createdOrder = order({ status: 'pending_payment' });
+  const offer = {
+    id: createdOrder.offer_id,
+    seller_id: createdOrder.seller_id,
+    category: 'makanan_berat',
+    allergens: options.allergenConflict ? ['kacang'] : [],
+    status: options.unavailable ? 'closed' : 'active',
+    quota_total: 5,
+    quota_available: 5,
+    quota_held: 0,
+    quota_sold: 0,
+    normal_price: 100000,
+    discount_price: 40000,
+    pickup_start: createdOrder.pickup_start,
+    pickup_end: createdOrder.pickup_end,
+    safe_eat_until: createdOrder.safe_eat_until,
+    fitness_confirmed: true,
+    created_at: createdAt,
+  };
+  const tx = {
+    query: async (sql: string, values: unknown[] = []) => {
+      statements.push(sql);
+      valuesSeen.push(values);
+      if (sql.startsWith('INSERT INTO idempotency_keys')) return { rows: [], rowCount: 1 };
+      if (sql.startsWith('SELECT * FROM idempotency_keys')) return { rows: [{ payload_hash: valuesSeen.find((v, i) => statements[i]?.startsWith('INSERT INTO idempotency_keys'))?.[3], response: null }], rowCount: 1 };
+      if (sql.startsWith('SELECT * FROM offers')) return { rows: [offer], rowCount: 1 };
+      if (sql.startsWith('SELECT allergen_filters FROM users')) return { rows: [{ allergen_filters: options.allergenConflict ? ['kacang'] : [] }], rowCount: 1 };
+      if (sql.startsWith('SELECT * FROM merchant_profiles')) return { rows: [{ shop_name: 'Gerai Contoh', address: 'Jl. Contoh 1', latitude: -6.9, longitude: 107.6, photo_id: null }], rowCount: 1 };
+      if (sql.startsWith('INSERT INTO orders')) return { rows: [createdOrder], rowCount: 1 };
+      if (sql.startsWith('INSERT INTO payment_intents')) return { rows: [{ id: 'intent-1', order_id: createdOrder.id, amount: createdOrder.price, currency: 'IDR', status: 'pending', created_at: createdAt }], rowCount: 1 };
+      return { rows: [], rowCount: 1 };
+    },
+  } as unknown as Tx;
+  const deps = {
+    db: { transaction: async (fn: (value: Tx) => Promise<unknown>) => fn(tx) },
+    config: { FEE_BPS: 500 },
+    clock: { now: () => createdAt },
+  } as unknown as Dependencies;
+  return { service: new OrderService(deps), statements, valuesSeen };
+}
+
+test('C04-UT11 OrderService.checkout creates order, reserves quota and authorizes payment', async () => {
+  const h = checkoutHarness();
+  const result = await h.service.checkout(context('buyer', 'buyer-1'), { offer_id: order().offer_id }, 'checkout-key');
+
+  assert.equal(result.order_id, orderId);
+  assert.equal(result.intent_id, 'intent-1');
+  assert.equal(result.status, 'pending_payment');
+  assert.ok(h.statements.some((sql) => sql.startsWith('INSERT INTO orders')));
+  assert.ok(h.statements.some((sql) => sql.includes("INSERT INTO checkout_reservations(order_id,status,expires_at) VALUES($1,'held',$2)")));
+  assert.ok(h.statements.some((sql) => sql.startsWith('INSERT INTO payment_intents')));
+  assert.ok(h.statements.some((sql) => sql.startsWith('INSERT INTO jobs')));
+  assert.ok(h.valuesSeen.some((values) => values.includes('order.created')));
+});
+
+test('C04-UT12 OrderService.checkout rejects wrong role, unavailable offers, and allergen conflicts', async () => {
+  await assert.rejects(checkoutHarness().service.checkout(context('seller', 'seller-1'), { offer_id: order().offer_id }, 'key'), { code: 'FORBIDDEN' });
+  await assert.rejects(checkoutHarness({ unavailable: true }).service.checkout(context('buyer', 'buyer-1'), { offer_id: order().offer_id }, 'key'), { code: 'OFFER_UNAVAILABLE' });
+  await assert.rejects(checkoutHarness({ allergenConflict: true }).service.checkout(context('buyer', 'buyer-1'), { offer_id: order().offer_id }, 'key'), { code: 'ALLERGEN_CONFLICT' });
+});
+
+function cancelHarness(row: OrderRecord) {
+  const statements: string[] = [];
+  const parameters: unknown[][] = [];
+  const tx = {
+    query: async (sql: string, values: unknown[] = []) => {
+      statements.push(sql);
+      parameters.push(values);
+      if (sql.startsWith('INSERT INTO idempotency_keys')) return { rows: [], rowCount: 1 };
+      if (sql.startsWith('SELECT * FROM idempotency_keys')) return { rows: [{ payload_hash: parameters.find((v, i) => statements[i]?.startsWith('INSERT INTO idempotency_keys'))?.[3], response: null }], rowCount: 1 };
+      if (sql.startsWith('SELECT offer_id FROM orders')) return { rows: [{ offer_id: row.offer_id }], rowCount: 1 };
+      if (sql.startsWith('SELECT * FROM offers')) return { rows: [{}], rowCount: 1 };
+      if (sql.startsWith('SELECT * FROM orders')) return { rows: [row], rowCount: 1 };
+      if (sql.startsWith('SELECT id,amount,reason FROM refunds')) return { rows: [], rowCount: 0 };
+      if (sql.startsWith('INSERT INTO refunds')) return { rows: [{ id: 'refund-1', amount: row.price, reason: values[2] }], rowCount: 1 };
+      if (sql.startsWith('UPDATE checkout_reservations')) return { rows: [{ order_id: row.id }], rowCount: 1 };
+      if (sql.startsWith('UPDATE payout_entitlements')) return { rows: [], rowCount: 0 };
+      if (sql.startsWith('INSERT INTO notifications')) return { rows: [{ id: 'notification-1' }], rowCount: 1 };
+      return { rows: [], rowCount: 1 };
+    },
+  } as unknown as Tx;
+  const deps = {
+    db: { transaction: async (fn: (value: Tx) => Promise<unknown>) => fn(tx) },
+    config: {},
+    clock: { now: () => createdAt },
+  } as unknown as Dependencies;
+  return { service: new OrderService(deps), statements, parameters };
+}
+
+test('C04-UT13 OrderService.cancelBySeller refunds eligible paid order', async () => {
+  const h = cancelHarness(order({ status: 'paid' }));
+  const result = await h.service.cancelBySeller(context('seller', 'seller-1'), orderId, 'cancel-key', 'Stok rusak.');
+
+  assert.equal(result.status, 'refunded');
+  assert.equal(result.refund.id, 'refund-1');
+  assert.ok(h.statements.some((sql) => sql.startsWith('INSERT INTO refunds')));
+  assert.ok(h.statements.some((sql) => sql.includes("UPDATE orders SET status='refunded'")));
+  assert.ok(h.statements.some((sql) => sql.includes("UPDATE complaints SET status='approved'")));
+});
+
+test('C04-UT14 OrderService.cancelBySeller rejects wrong role, non-owner, and invalid state', async () => {
+  await assert.rejects(cancelHarness(order()).service.cancelBySeller(context('buyer', 'buyer-1'), orderId, 'key'), { code: 'FORBIDDEN' });
+  await assert.rejects(cancelHarness(order()).service.cancelBySeller(context('seller', 'other-seller'), orderId, 'key'), { code: 'ORDER_NOT_FOUND' });
+  await assert.rejects(cancelHarness(order({ status: 'completed' })).service.cancelBySeller(context('seller', 'seller-1'), orderId, 'key'), { code: 'CANCEL_STATE_CONFLICT' });
+});
