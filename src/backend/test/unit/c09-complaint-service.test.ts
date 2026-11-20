@@ -10,15 +10,16 @@ import { hash } from '../../src/core/crypto.js';
 const now = new Date('2026-10-05T14:00:00Z');
 const orderId = '550e8400-e29b-41d4-a716-446655440000';
 const complaintId = '750e8400-e29b-41d4-a716-446655440000';
-function order(): OrderRecord {
+
+function order(overrides: Partial<OrderRecord> = {}): OrderRecord {
   return {
     id: orderId, code: 'SR-0123456789', invoice: 'INV-test', offer_id: '650e8400-e29b-41d4-a716-446655440000',
-    buyer_id: 'buyer-1', seller_id: 'seller-1', status: 'paid', price: 40000, fee: 2000, fee_bps: 500,
+    buyer_id: 'buyer-1', seller_id: 'seller-1', status: 'dispute', price: 40000, fee: 2000, fee_bps: 500,
     snapshot: { category: 'makanan_berat', allergens: [], normal_price: 100000, discount_price: 40000,
       merchant: { id: 'seller-1', name: 'Toko', address: 'Jl. Contoh', latitude: -6, longitude: 107, photo_id: null } },
     payment_deadline: new Date('2026-10-05T12:15:00Z'), pickup_start: new Date('2026-10-05T13:00:00Z'),
     pickup_end: new Date('2026-10-05T15:00:00Z'), safe_eat_until: new Date('2026-10-05T15:30:00Z'),
-    paid_at: now, completed_at: null, created_at: now, updated_at: now,
+    paid_at: now, completed_at: null, created_at: now, updated_at: now, ...overrides,
   };
 }
 function complaint(overrides: Partial<ComplaintRecord> = {}): ComplaintRecord {
@@ -27,7 +28,7 @@ function complaint(overrides: Partial<ComplaintRecord> = {}): ComplaintRecord {
 const buyer: ServiceContext = { actor: { id: 'buyer-1', role: 'buyer', sessionId: 's1' }, clock: { now: () => now } };
 const seller: ServiceContext = { actor: { id: 'seller-1', role: 'seller', sessionId: 's1' }, clock: { now: () => now } };
 
-function harness(options: { order?: OrderRecord; complaint?: ComplaintRecord; missingComplaint?: boolean } = {}) {
+function harness(options: { order?: OrderRecord; complaint?: ComplaintRecord; missingMapping?: boolean; missingComplaint?: boolean } = {}) {
   const o = options.order ?? order();
   let c = options.complaint ?? complaint();
   let payloadHash = '';
@@ -44,8 +45,12 @@ function harness(options: { order?: OrderRecord; complaint?: ComplaintRecord; mi
       if (sql.startsWith('INSERT INTO complaints')) { c = complaint({ reason: values[2] as ComplaintRecord['reason'], description: String(values[3]), response_due: values[4] as Date | null }); return { rows: [c], rowCount: 1 }; }
       if (sql.startsWith('SELECT * FROM complaints')) return { rows: options.missingComplaint ? [] : [c], rowCount: options.missingComplaint ? 0 : 1 };
       if (sql.startsWith('SELECT media_id FROM complaint_media')) return { rows: [], rowCount: 0 };
-      if (sql.startsWith('SELECT order_id FROM complaints')) return { rows: [{ order_id: orderId }], rowCount: 1 };
+      if (sql.startsWith('SELECT order_id FROM complaints')) return { rows: options.missingMapping ? [] : [{ order_id: orderId }], rowCount: options.missingMapping ? 0 : 1 };
       if (sql.startsWith('INSERT INTO notifications')) return { rows: [{ id: 'notification-1' }], rowCount: 1 };
+      if (sql.includes("UPDATE checkout_reservations") || sql.includes("UPDATE complaints SET status=$2")) return { rows: [{ order_id: orderId }], rowCount: 1 };
+      if (sql.startsWith('SELECT id,amount,reason FROM refunds')) return { rows: [], rowCount: 0 };
+      if (sql.startsWith('INSERT INTO refunds')) return { rows: [{ id: 'refund-1', amount: o.price, reason: values?.[2] ?? 'test' }], rowCount: 1 };
+      if (sql.includes('UPDATE payout_entitlements')) return { rows: [{ id: 'payout-1' }], rowCount: 1 };
       return { rows: [], rowCount: 0 };
     },
   } as unknown as Tx;
@@ -54,16 +59,20 @@ function harness(options: { order?: OrderRecord; complaint?: ComplaintRecord; mi
       transaction: async (fn: (tx: Tx) => Promise<unknown>) => fn(tx),
       query: async (sql: string, values: unknown[] = []) => {
         statements.push(sql);
+        if (sql.includes('FROM complaints c JOIN orders o')) {
+          const row = { ...c, order_code: 'SR-0123456789' };
+          return { rows: [row], rowCount: 1 };
+        }
         return { rows: [], rowCount: 0 };
       },
     },
     config: {}, clock: { now: () => now },
   } as unknown as Dependencies;
-  return { service: new ComplaintService(deps), tx, statements, getComplaint: () => c, getPayloadHash: () => payloadHash };
+  return { service: new ComplaintService(deps), tx, statements, getComplaint: () => c, setComplaint: (value: ComplaintRecord) => { c = value; }, getPayloadHash: () => payloadHash };
 }
 
 test('C09-UT04 ComplaintService.open creates dispute and returns complaint view', async () => {
-  const h = harness();
+  const h = harness({ order: order({ status: 'paid' }) });
   const result = await h.service.open(buyer, { order_id: orderId, reason: 'unfit', description: 'Makanan sudah tidak layak dimakan.', media_ids: [] }, 'complaint-key');
   assert.equal(result.status, 'open');
   assert.ok(h.statements.some((sql) => sql.includes("status='dispute'")));
@@ -73,25 +82,58 @@ test('C09-UT04 ComplaintService.open creates dispute and returns complaint view'
 
 test('C09-UT05 ComplaintService.open enforces buyer, ownership, paid state, and pickup time', async () => {
   const value = { order_id: orderId, reason: 'unfit' as const, description: 'Makanan sudah tidak layak dimakan.', media_ids: [] };
-  await assert.rejects(harness().service.open(seller, value, 'k'), { code: 'FORBIDDEN' });
-  await assert.rejects(harness({ order: { ...order(), buyer_id: 'someone' } }).service.open(buyer, value, 'k'), { code: 'ORDER_NOT_FOUND' });
-  await assert.rejects(harness({ order: { ...order(), status: 'completed' } }).service.open(buyer, value, 'k'), { code: 'COMPLAINT_STATE_CONFLICT' });
-  await assert.rejects(harness({ order: { ...order(), pickup_end: new Date('2026-10-05T13:00:00Z') } }).service.open(buyer, value, 'k'), { code: 'COMPLAINT_EXPIRED' });
+  await assert.rejects(harness({ order: order({ status: 'paid' }) }).service.open(seller, value, 'k'), { code: 'FORBIDDEN' });
+  await assert.rejects(harness({ order: order({ status: 'paid', buyer_id: 'someone' }) }).service.open(buyer, value, 'k'), { code: 'ORDER_NOT_FOUND' });
+  await assert.rejects(harness({ order: order({ status: 'completed' }) }).service.open(buyer, value, 'k'), { code: 'COMPLAINT_STATE_CONFLICT' });
+  await assert.rejects(harness({ order: order({ status: 'paid', pickup_end: new Date('2026-10-05T13:00:00Z') }) }).service.open(buyer, value, 'k'), { code: 'COMPLAINT_EXPIRED' });
 });
 
-test('C09-UT06 ComplaintService.autoRefund rejects non-due cases without side effects', async () => {
-  const h = harness();
-  assert.equal(await h.service.autoRefund(h.tx, complaint(), order(), now), false);
-  assert.equal(await h.service.autoRefund(h.tx, complaint({ reason: 'store_closed', response_due: new Date('2026-10-06T14:00:00Z') }), order(), now), false);
+test('C09-UT06 ComplaintService.autoRefund rejects non-due cases and refunds due store-closed complaint', async () => {
+  const h = harness({ order: order({ status: 'dispute' }) });
+  assert.equal(await h.service.autoRefund(h.tx, complaint(), order({ status: 'dispute' }), now), false);
+  assert.equal(await h.service.autoRefund(h.tx, complaint({ reason: 'store_closed', response_due: new Date('2026-10-05T13:00:00Z') }), order({ status: 'dispute' }), now), true);
+  assert.ok(h.statements.some((sql) => sql.includes("status='auto_refunded'")));
 });
 
 test('C09-UT07 ComplaintService.detail and list return complaint data with buyer/seller scopes', async () => {
   const h = harness();
   assert.equal((await h.service.detail(buyer, complaintId)).id, complaintId);
   const buyerList = await h.service.list(buyer, { status: 'open', limit: 5 });
-  assert.equal(buyerList.items.length, 0);
+  assert.equal(buyerList.items.length, 1);
   assert.ok(h.statements.some((sql) => sql.includes('o.buyer_id')));
   await h.service.list(seller, {});
   assert.ok(h.statements.some((sql) => sql.includes('o.seller_id')));
   await assert.rejects(harness({ missingComplaint: true }).service.detail(buyer, complaintId), { code: 'COMPLAINT_NOT_FOUND' });
+});
+
+test('C09-UT08 ComplaintService.decide approves complaint and triggers refund', async () => {
+  const h = harness({ complaint: complaint({ status: 'open' }), order: order({ status: 'dispute' }) });
+  const result = await h.service.decide(seller, complaintId, { approved: true, response: 'Pengaduan diterima dan refund diproses.' });
+  assert.equal(result.status, 'open');
+  assert.ok(h.statements.some((sql) => sql.includes('UPDATE complaints SET status=$2')));
+  assert.ok(h.statements.some((sql) => sql.includes('INSERT INTO refunds')));
+  assert.ok(h.statements.some((sql) => sql.includes('complaint.approved')));
+});
+
+test('C09-UT08b ComplaintService.decide rejects complaint and restores paid status', async () => {
+  const h = harness({ complaint: complaint({ status: 'open' }), order: order({ status: 'dispute' }) });
+  const result = await h.service.decide(seller, complaintId, { approved: false, response: 'Pengaduan ditolak setelah ditinjau.' });
+  assert.equal(result.status, 'open');
+  assert.ok(h.statements.some((sql) => sql.includes("UPDATE orders SET status='paid'")));
+  assert.ok(h.statements.some((sql) => sql.includes("status='pending'")));
+  assert.ok(h.statements.some((sql) => sql.includes('complaint.rejected')));
+});
+
+test('C09-UT09 ComplaintService.decide handles repeated decisions and negative cases', async () => {
+  await assert.rejects(harness().service.decide(buyer, complaintId, { approved: true, response: 'Pengaduan diterima dengan bukti.' }), { code: 'FORBIDDEN' });
+  await assert.rejects(harness({ missingMapping: true }).service.decide(seller, complaintId, { approved: true, response: 'Pengaduan diterima dengan bukti.' }), { code: 'COMPLAINT_NOT_FOUND' });
+
+  const h = harness({ complaint: complaint({ status: 'approved', response: 'Pengaduan diterima.' }) });
+  const repeated = await h.service.decide(seller, complaintId, { approved: true, response: 'Pengaduan diterima.' });
+  assert.equal(repeated.status, 'approved');
+  await assert.rejects(harness({ complaint: complaint({ status: 'approved', response: 'Jawaban lama' }) }).service.decide(seller, complaintId, { approved: false, response: 'Jawaban lain' }), { code: 'COMPLAINT_ALREADY_DECIDED' });
+});
+
+test('C09-UT10 ComplaintService.decide rejects inconsistent dispute state', async () => {
+  await assert.rejects(harness({ complaint: complaint({ status: 'open' }), order: order({ status: 'paid' }) }).service.decide(seller, complaintId, { approved: false, response: 'Pengaduan ditolak.' }), { code: 'COMPLAINT_STATE_CONFLICT' });
 });
