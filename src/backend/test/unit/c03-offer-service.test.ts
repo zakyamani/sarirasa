@@ -30,9 +30,11 @@ const seller: ServiceContext = { actor: { id: 'seller-1', role: 'seller', sessio
 function harness(options: { offer?: OfferRecord; profile?: unknown; paid?: number; list?: OfferRecord[] } = {}) {
   let current = options.offer ?? record();
   const statements: string[] = [];
+  const parameters: unknown[][] = [];
   const tx = {
-    query: async (sql: string) => {
+    query: async (sql: string, values: unknown[] = []) => {
       statements.push(sql);
+      parameters.push(values);
       if (sql.includes('merchant_profiles')) return { rows: [options.profile ?? { shop_name: 'Toko', address: 'Jl. Contoh', latitude: -6, longitude: 107 }], rowCount: 1 };
       if (sql.startsWith('SELECT * FROM offers')) return { rows: [current], rowCount: 1 };
       if (sql.includes('SELECT id FROM orders')) return { rows: [], rowCount: options.paid ?? 0 };
@@ -43,14 +45,15 @@ function harness(options: { offer?: OfferRecord; profile?: unknown; paid?: numbe
   const deps = {
     db: {
       transaction: async (fn: (tx: Tx) => Promise<unknown>) => fn(tx),
-      query: async (sql: string) => {
+      query: async (sql: string, values: unknown[] = []) => {
         statements.push(sql);
+        parameters.push(values);
         return { rows: options.list ?? [current], rowCount: (options.list ?? [current]).length };
       },
     },
     config: {}, clock: { now: () => now },
   } as unknown as Dependencies;
-  return { service: new OfferService(deps), statements, setOffer: (value: OfferRecord) => { current = value; } };
+  return { service: new OfferService(deps), statements, parameters, setOffer: (value: OfferRecord) => { current = value; } };
 }
 
 test('C03-UT06 OfferService.create requires complete seller profile and creates/audits offer', async () => {
@@ -71,7 +74,9 @@ test('C03-UT08 OfferService.update enforces mutable active offer then updates it
   const result = await h.service.update(seller, offerId, input({ quota: 12 }));
   assert.equal(result.id, offerId);
   assert.ok(h.statements.some((sql) => sql.startsWith('UPDATE offers')));
-  assert.ok(h.statements.some((sql) => sql.includes('offer.updated')));
+  const auditIndex = h.statements.findIndex((sql) => sql.startsWith('INSERT INTO audit_logs'));
+  assert.notEqual(auditIndex, -1);
+  assert.equal(h.parameters[auditIndex]?.[2], 'offer.updated');
 });
 
 test('C03-UT09 OfferService.update rejects reserved, previously paid, closed, and missing offers', async () => {
