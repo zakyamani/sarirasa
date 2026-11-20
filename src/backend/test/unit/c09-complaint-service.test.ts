@@ -33,9 +33,11 @@ function harness(options: { order?: OrderRecord; complaint?: ComplaintRecord; mi
   let c = options.complaint ?? complaint();
   let payloadHash = '';
   const statements: string[] = [];
+  const parameters: unknown[][] = [];
   const tx = {
     query: async (sql: string, values: unknown[] = []) => {
       statements.push(sql);
+      parameters.push(values);
       if (sql.startsWith('INSERT INTO idempotency_keys')) { payloadHash = String(values[3]); return { rows: [], rowCount: 1 }; }
       if (sql.startsWith('SELECT * FROM idempotency_keys')) return { rows: [{ payload_hash: payloadHash, response: null }], rowCount: 1 };
       if (sql.startsWith('SELECT offer_id FROM orders')) return { rows: [{ offer_id: o.offer_id }], rowCount: 1 };
@@ -47,9 +49,18 @@ function harness(options: { order?: OrderRecord; complaint?: ComplaintRecord; mi
       if (sql.startsWith('SELECT media_id FROM complaint_media')) return { rows: [], rowCount: 0 };
       if (sql.startsWith('SELECT order_id FROM complaints')) return { rows: options.missingMapping ? [] : [{ order_id: orderId }], rowCount: options.missingMapping ? 0 : 1 };
       if (sql.startsWith('INSERT INTO notifications')) return { rows: [{ id: 'notification-1' }], rowCount: 1 };
+      if (sql.startsWith('INSERT INTO audit_logs')) return { rows: [], rowCount: 1 };
+      if (sql.startsWith('UPDATE complaints SET status=$2')) {
+        c = complaint({ ...c, status: values[1] as ComplaintRecord['status'], response: values[2] as string, decided_at: values[3] as Date });
+        return { rows: [{ id: complaintId }], rowCount: 1 };
+      }
+      if (sql.startsWith('UPDATE complaints SET status=\'auto_refunded\'')) {
+        c = complaint({ ...c, status: 'auto_refunded', response: 'Tidak ditanggapi selama 24 jam; refund penuh simulasi.', decided_at: values[1] as Date });
+        return { rows: [], rowCount: 1 };
+      }
       if (sql.includes("UPDATE checkout_reservations") || sql.includes("UPDATE complaints SET status=$2")) return { rows: [{ order_id: orderId }], rowCount: 1 };
       if (sql.startsWith('SELECT id,amount,reason FROM refunds')) return { rows: [], rowCount: 0 };
-      if (sql.startsWith('INSERT INTO refunds')) return { rows: [{ id: 'refund-1', amount: o.price, reason: values?.[2] ?? 'test' }], rowCount: 1 };
+      if (sql.startsWith('INSERT INTO refunds')) return { rows: [{ id: 'refund-1', amount: o.price, reason: values[2] ?? 'test' }], rowCount: 1 };
       if (sql.includes('UPDATE payout_entitlements')) return { rows: [{ id: 'payout-1' }], rowCount: 1 };
       return { rows: [], rowCount: 0 };
     },
@@ -59,6 +70,7 @@ function harness(options: { order?: OrderRecord; complaint?: ComplaintRecord; mi
       transaction: async (fn: (tx: Tx) => Promise<unknown>) => fn(tx),
       query: async (sql: string, values: unknown[] = []) => {
         statements.push(sql);
+        parameters.push(values);
         if (sql.includes('FROM complaints c JOIN orders o')) {
           const row = { ...c, order_code: 'SR-0123456789' };
           return { rows: [row], rowCount: 1 };
@@ -68,7 +80,7 @@ function harness(options: { order?: OrderRecord; complaint?: ComplaintRecord; mi
     },
     config: {}, clock: { now: () => now },
   } as unknown as Dependencies;
-  return { service: new ComplaintService(deps), tx, statements, getComplaint: () => c, setComplaint: (value: ComplaintRecord) => { c = value; }, getPayloadHash: () => payloadHash };
+  return { service: new ComplaintService(deps), tx, statements, parameters, getComplaint: () => c, setComplaint: (value: ComplaintRecord) => { c = value; }, getPayloadHash: () => payloadHash };
 }
 
 test('C09-UT04 ComplaintService.open creates dispute and returns complaint view', async () => {
@@ -109,25 +121,25 @@ test('C09-UT07 ComplaintService.detail and list return complaint data with buyer
 test('C09-UT08 ComplaintService.decide approves complaint and triggers refund', async () => {
   const h = harness({ complaint: complaint({ status: 'open' }), order: order({ status: 'dispute' }) });
   const result = await h.service.decide(seller, complaintId, { approved: true, response: 'Pengaduan diterima dan refund diproses.' });
-  assert.equal(result.status, 'open');
+  assert.equal(result.status, 'approved');
   assert.ok(h.statements.some((sql) => sql.includes('UPDATE complaints SET status=$2')));
   assert.ok(h.statements.some((sql) => sql.includes('INSERT INTO refunds')));
-  assert.ok(h.statements.some((sql) => sql.includes('complaint.approved')));
+  const auditIndex = h.statements.findIndex((sql) => sql.startsWith('INSERT INTO audit_logs') && h.parameters[h.statements.indexOf(sql)]?.[2] === 'complaint.approved');
+  assert.notEqual(auditIndex, -1);
 });
 
 test('C09-UT08b ComplaintService.decide rejects complaint and restores paid status', async () => {
   const h = harness({ complaint: complaint({ status: 'open' }), order: order({ status: 'dispute' }) });
   const result = await h.service.decide(seller, complaintId, { approved: false, response: 'Pengaduan ditolak setelah ditinjau.' });
-  assert.equal(result.status, 'open');
+  assert.equal(result.status, 'rejected');
   assert.ok(h.statements.some((sql) => sql.includes("UPDATE orders SET status='paid'")));
   assert.ok(h.statements.some((sql) => sql.includes("status='pending'")));
-  assert.ok(h.statements.some((sql) => sql.includes('complaint.rejected')));
+  assert.ok(h.parameters.some((values) => values.includes('complaint.rejected')));
 });
 
 test('C09-UT09 ComplaintService.decide handles repeated decisions and negative cases', async () => {
   await assert.rejects(harness().service.decide(buyer, complaintId, { approved: true, response: 'Pengaduan diterima dengan bukti.' }), { code: 'FORBIDDEN' });
   await assert.rejects(harness({ missingMapping: true }).service.decide(seller, complaintId, { approved: true, response: 'Pengaduan diterima dengan bukti.' }), { code: 'COMPLAINT_NOT_FOUND' });
-
   const h = harness({ complaint: complaint({ status: 'approved', response: 'Pengaduan diterima.' }) });
   const repeated = await h.service.decide(seller, complaintId, { approved: true, response: 'Pengaduan diterima.' });
   assert.equal(repeated.status, 'approved');
