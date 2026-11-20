@@ -37,6 +37,7 @@ function harness(options: { credential?: Record<string, unknown> | null; order?:
       if (sql.startsWith('SELECT * FROM offers')) return { rows: [{}], rowCount: 1 };
       if (sql.startsWith('SELECT * FROM orders')) return { rows: [row], rowCount: 1 };
       if (sql.startsWith('SELECT * FROM pickup_credentials')) return { rows: credential ? [credential] : [], rowCount: credential ? 1 : 0 };
+      if (sql.startsWith('SELECT encrypted_data FROM pickup_credentials')) return { rows: credential ? [{ encrypted_data: credential.encrypted_data }] : [], rowCount: credential ? 1 : 0 };
       if (sql.startsWith('INSERT INTO payout_entitlements')) return { rows: [{ id: 'payout-1' }], rowCount: 1 };
       if (sql.startsWith('INSERT INTO notifications')) return { rows: [{ id: 'notification-1' }], rowCount: 1 };
       return { rows: [], rowCount: 0 };
@@ -62,7 +63,8 @@ test('C08-UT06 PickupService.credential returns active credential or undefined',
   const result = await h.service.credential(h.tx, orderId);
   assert.equal(result?.qr, `sisarasa:v1:${orderId}:${h.token}`);
   assert.equal(result?.otp, '123456');
-  assert.equal(await harness({ credential: null }).service.credential(h.tx, orderId), undefined);
+  const empty = harness({ credential: null });
+  assert.equal(await empty.service.credential(empty.tx, orderId), undefined);
 });
 
 test('C08-UT07 PickupService.validate completes an order with valid QR and schedules payout', async () => {
